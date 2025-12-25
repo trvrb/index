@@ -1,0 +1,5 @@
+# Google Scholar user ID to scrape
+user_id: RIi-1pAAAAAJ
+
+# Seconds to wait between requests to avoid rate limiting
+request_delay: 2
