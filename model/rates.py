@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -55,6 +56,7 @@ def analyze_paper(
     min_count: float,
     obs_var: Optional[float] = None,
     obs_overdispersion: Optional[float] = None,
+    forecast_years: int = 0,
 ) -> dict[str, Any]:
     """Analyze a single paper's citation time series.
 
@@ -65,9 +67,10 @@ def analyze_paper(
         min_count: Pseudocount to add before log transform.
         obs_var: Constant observation variance (if not using overdispersion).
         obs_overdispersion: Overdispersion factor φ for time-varying variance.
+        forecast_years: Number of years to forecast into the future.
 
     Returns:
-        Dict with years, observed counts, empirical rates, and smoothed rates.
+        Dict with years, observed counts, empirical rates, smoothed rates, and forecasts.
     """
     citations = paper.get("citations_by_year", {})
 
@@ -123,7 +126,7 @@ def analyze_paper(
     smoothed_rate = np.exp(x_smooth)
     smoothed_std = smoothed_rate * np.sqrt(P_smooth)
 
-    return {
+    result = {
         "title": paper["title"],
         "years": years,
         "observed_citations": counts.tolist(),
@@ -133,6 +136,66 @@ def analyze_paper(
         "smoothed_log_rate": x_smooth.tolist(),
         "smoothed_rate_std": smoothed_std.tolist(),
     }
+
+    # Add forecasts if requested
+    if forecast_years > 0:
+        last_year = years[-1]
+        forecast_years_list = [last_year + h for h in range(1, forecast_years + 1)]
+
+        # Get final smoothed state
+        x_T = x_smooth[-1]
+        P_T = P_smooth[-1]
+
+        # Compute forecasts for each horizon
+        f_log_var = []
+        f_rate_median = []
+        f_rate_std = []
+        f_sampled_log_rate = []
+        f_sampled_rate = []
+
+        # For observation noise sampling
+        sigma_min = 0.1
+        phi = obs_overdispersion if obs_overdispersion is not None else 0.56
+
+        for h in range(1, forecast_years + 1):
+            # Forecast variance grows linearly with horizon
+            var_h = P_T + h * process_var
+            mean_h = x_T  # Mean stays constant (random walk has no drift)
+
+            f_log_var.append(float(var_h))
+
+            # Transform to rate space (lognormal distribution)
+            median_lambda = math.exp(mean_h)
+            var_lambda = (math.exp(var_h) - 1.0) * math.exp(2 * mean_h + var_h)
+            std_lambda = math.sqrt(var_lambda)
+
+            f_rate_median.append(median_lambda)
+            f_rate_std.append(std_lambda)
+
+            # Sample state (log-rate) from forecast distribution
+            log_rate_sample = np.random.normal(mean_h, math.sqrt(var_h))
+
+            # Compute observation variance (same formula as compute_obs_variance)
+            rate_sample = math.exp(log_rate_sample)
+            R_h = phi / (rate_sample + min_count) + sigma_min**2
+
+            # Sample observed log-rate with observation noise
+            sampled_log_rate = np.random.normal(log_rate_sample, math.sqrt(R_h))
+            sampled_rate = math.exp(sampled_log_rate)
+
+            f_sampled_log_rate.append(float(sampled_log_rate))
+            f_sampled_rate.append(float(sampled_rate))
+
+        result.update({
+            "forecast_years": forecast_years_list,
+            "forecast_log_rate_var": f_log_var,
+            "forecast_rate_median": f_rate_median,
+            "forecast_rate_std": f_rate_std,
+            "forecast_sampled_log_rate": f_sampled_log_rate,
+            "forecast_sampled_rate": f_sampled_rate,
+        })
+
+    return result
 
 
 def check_citation_totals(paper: dict[str, Any], analyzed: dict[str, Any]) -> None:
@@ -194,6 +257,12 @@ def main() -> None:
         default=0.5,
         help="Pseudocount added before log transform (default: 0.5)",
     )
+    parser.add_argument(
+        "--forecast-years",
+        type=int,
+        default=5,
+        help="Number of years to forecast into the future (default: 5)",
+    )
 
     args = parser.parse_args()
 
@@ -214,6 +283,8 @@ def main() -> None:
     # Analyze each paper
     papers = data.get("papers", [])
     print(f"Analyzing {len(papers)} papers...")
+    if args.forecast_years > 0:
+        print(f"Forecasting {args.forecast_years} years into the future...")
 
     analyzed_papers = []
     for paper in papers:
@@ -224,6 +295,7 @@ def main() -> None:
             min_count=args.min_count,
             obs_var=args.obs_var,
             obs_overdispersion=args.obs_overdispersion,
+            forecast_years=args.forecast_years,
         )
         check_citation_totals(paper, analyzed)
         analyzed_papers.append(analyzed)
@@ -246,6 +318,18 @@ def main() -> None:
         "model": model_info,
         "papers": analyzed_papers,
     }
+
+    # Add forecast metadata if forecasting was requested
+    if args.forecast_years > 0:
+        result["forecast"] = {
+            "horizon_years": args.forecast_years,
+            "assumptions": {
+                "model": "random_walk_log_rate",
+                "process_var": args.process_var,
+                "obs_overdispersion": args.obs_overdispersion,
+                "min_count": args.min_count,
+            }
+        }
 
     # Write output
     print(f"Writing {args.output}...")

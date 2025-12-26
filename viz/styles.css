@@ -101,9 +101,34 @@ section h2 {
     stroke-width: 2;
 }
 
+/* Forecast elements */
+.forecast-area {
+    fill: #4a90d9;
+    opacity: 0.15;
+}
+
+.forecast-line {
+    fill: none;
+    stroke: #4a90d9;
+    stroke-width: 2;
+    stroke-dasharray: 5, 5;
+}
+
+.demarcation-line {
+    stroke: #888;
+    stroke-width: 1;
+    stroke-dasharray: 4, 4;
+}
+
 .empirical-point {
     fill: #e74c3c;
     stroke: white;
+    stroke-width: 1.5;
+}
+
+.forecast-sample-point {
+    fill: none;
+    stroke: #e74c3c;
     stroke-width: 1.5;
 }
 
@@ -157,6 +182,12 @@ section h2 {
 .legend-color.uncertainty {
     background: #4a90d9;
     opacity: 0.3;
+}
+
+.legend-color.forecast {
+    background: linear-gradient(90deg, #4a90d9 0%, #4a90d9 40%, transparent 40%, transparent 60%, #4a90d9 60%, #4a90d9 100%);
+    height: 3px;
+    border-radius: 0;
 }
 
 /* Tooltip */

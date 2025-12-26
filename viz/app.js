@@ -233,7 +233,7 @@ function drawLinePlot(paper) {
     const g = svg.append('g')
         .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Prepare data
+    // Prepare historical data
     const lineData = paper.years.map((year, i) => ({
         year,
         empirical: paper.empirical_rate[i],
@@ -241,12 +241,31 @@ function drawLinePlot(paper) {
         std: paper.smoothed_rate_std[i]
     }));
 
-    // Scales
+    // Prepare forecast data (if available)
+    const hasForecast = paper.forecast_years && paper.forecast_years.length > 0;
+    const forecastData = hasForecast ? paper.forecast_years.map((year, i) => ({
+        year,
+        mean: paper.forecast_rate_median[i],
+        std: paper.forecast_rate_std[i]
+    })) : [];
+
+    // Last historical year for demarcation
+    const lastHistoricalYear = paper.years[paper.years.length - 1];
+
+    // Compute combined year range
+    const allPlotYears = hasForecast
+        ? [...paper.years, ...paper.forecast_years]
+        : paper.years;
+
+    // Scales - extend to include forecast years
     const xScale = d3.scaleLinear()
-        .domain(d3.extent(lineData, d => d.year))
+        .domain(d3.extent(allPlotYears))
         .range([0, innerWidth]);
 
-    const yMax = d3.max(lineData, d => Math.max(d.empirical, d.smoothed + d.std)) * 1.1;
+    // Y max includes forecast uncertainty
+    const historicalYMax = d3.max(lineData, d => Math.max(d.empirical, d.smoothed + d.std));
+    const forecastYMax = hasForecast ? d3.max(forecastData, d => d.mean + d.std) : 0;
+    const yMax = Math.max(historicalYMax, forecastYMax) * 1.1;
     const yScale = d3.scaleLinear()
         .domain([0, yMax])
         .range([innerHeight, 0]);
@@ -327,6 +346,80 @@ function drawLinePlot(paper) {
         .on('mouseout', () => {
             tooltip.classed('visible', false);
         });
+
+    // Forecast elements (if available)
+    if (hasForecast && forecastData.length > 0) {
+        // Create bridge point for smooth connection
+        const lastHistorical = lineData[lineData.length - 1];
+        const forecastWithBridge = [
+            { year: lastHistorical.year, mean: lastHistorical.smoothed, std: lastHistorical.std },
+            ...forecastData
+        ];
+
+        // Forecast uncertainty band
+        const forecastAreaGenerator = d3.area()
+            .x(d => xScale(d.year))
+            .y0(d => yScale(Math.max(0, d.mean - d.std)))
+            .y1(d => yScale(d.mean + d.std))
+            .curve(d3.curveMonotoneX);
+
+        g.append('path')
+            .datum(forecastWithBridge)
+            .attr('class', 'forecast-area')
+            .attr('d', forecastAreaGenerator);
+
+        // Forecast line (dashed)
+        const forecastLineGenerator = d3.line()
+            .x(d => xScale(d.year))
+            .y(d => yScale(d.mean))
+            .curve(d3.curveMonotoneX);
+
+        g.append('path')
+            .datum(forecastWithBridge)
+            .attr('class', 'forecast-line')
+            .attr('d', forecastLineGenerator);
+
+        // Demarcation line between historical and forecast
+        const demarcationX = xScale(lastHistoricalYear + 0.5);
+        g.append('line')
+            .attr('class', 'demarcation-line')
+            .attr('x1', demarcationX)
+            .attr('x2', demarcationX)
+            .attr('y1', 0)
+            .attr('y2', innerHeight);
+
+        // Forecast sampled points (open red circles)
+        if (paper.forecast_sampled_rate && paper.forecast_sampled_rate.length > 0) {
+            const sampledData = paper.forecast_years.map((year, i) => ({
+                year,
+                sampled: paper.forecast_sampled_rate[i]
+            }));
+
+            g.selectAll('.forecast-sample-point')
+                .data(sampledData)
+                .join('circle')
+                .attr('class', 'forecast-sample-point')
+                .attr('cx', d => xScale(d.year))
+                .attr('cy', d => yScale(d.sampled))
+                .attr('r', 5)
+                .on('mouseover', (event, d) => {
+                    tooltip
+                        .classed('visible', true)
+                        .html(`
+                            <div class="title">${d.year} (forecast sample)</div>
+                            <div class="value">Sampled rate: ${d.sampled.toFixed(1)}</div>
+                        `);
+                })
+                .on('mousemove', (event) => {
+                    tooltip
+                        .style('left', (event.pageX + 15) + 'px')
+                        .style('top', (event.pageY - 10) + 'px');
+                })
+                .on('mouseout', () => {
+                    tooltip.classed('visible', false);
+                });
+        }
+    }
 }
 
 function drawStreamPlot() {
@@ -350,14 +443,27 @@ function drawStreamPlot() {
     // Filter years to start from config.streamMinYear
     const streamYears = allYears.filter(y => y >= config.streamMinYear);
 
-    // Build stacked data: for each year, get smoothed_rate for each paper
+    // Determine forecast years from first paper that has them
+    const samplePaper = papers.find(p => p.forecast_years && p.forecast_years.length > 0);
+    const forecastYears = samplePaper ? samplePaper.forecast_years : [];
+    const lastHistoricalYear = streamYears.length > 0 ? streamYears[streamYears.length - 1] : null;
+
+    // Combine historical and forecast years
+    const allStreamYears = [...streamYears, ...forecastYears];
+
+    // Build stacked data: for each year, get smoothed_rate or forecast_rate_mean
     // Papers are already sorted by first publication year
-    const stackData = streamYears.map(year => {
-        const row = { year };
+    const stackData = allStreamYears.map(year => {
+        const row = { year, isForecast: forecastYears.includes(year) };
         papers.forEach((paper, i) => {
             const yearIndex = paper.years.indexOf(year);
             if (yearIndex >= 0) {
+                // Historical year
                 row[`paper_${i}`] = paper.smoothed_rate[yearIndex];
+            } else if (paper.forecast_years && paper.forecast_years.includes(year)) {
+                // Forecast year
+                const forecastIndex = paper.forecast_years.indexOf(year);
+                row[`paper_${i}`] = paper.forecast_rate_median[forecastIndex];
             } else {
                 // Year not in paper's range
                 const firstYear = Math.min(...paper.years);
@@ -380,7 +486,7 @@ function drawStreamPlot() {
 
     // Scales
     const xScale = d3.scaleLinear()
-        .domain(d3.extent(streamYears))
+        .domain(d3.extent(allStreamYears))
         .range([0, innerWidth]);
 
     const yMin = d3.min(series, s => d3.min(s, d => d[0]));
@@ -468,6 +574,18 @@ function drawStreamPlot() {
         .attr('y', -45)
         .attr('text-anchor', 'middle')
         .text('Citations per year');
+
+    // Demarcation line between historical and forecast
+    if (forecastYears.length > 0 && lastHistoricalYear) {
+        const demarcationX = xScale(lastHistoricalYear + 0.5);
+
+        g.append('line')
+            .attr('class', 'demarcation-line')
+            .attr('x1', demarcationX)
+            .attr('x2', demarcationX)
+            .attr('y1', 0)
+            .attr('y2', innerHeight);
+    }
 }
 
 // Utility: debounce function
