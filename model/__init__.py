@@ -1,0 +1,1 @@
+"""Citation rate analysis models."""
