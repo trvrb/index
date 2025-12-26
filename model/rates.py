@@ -9,11 +9,11 @@ from __future__ import annotations
 import argparse
 import json
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 
-from .kalman import kalman_smoother_1d
+from .kalman import compute_obs_variance, kalman_smoother_1d
 
 
 def parse_scraped_at(scraped_at_str: str) -> datetime:
@@ -52,8 +52,9 @@ def analyze_paper(
     paper: dict[str, Any],
     scraped_at: datetime,
     process_var: float,
-    obs_var: float,
     min_count: float,
+    obs_var: Optional[float] = None,
+    obs_overdispersion: Optional[float] = None,
 ) -> dict[str, Any]:
     """Analyze a single paper's citation time series.
 
@@ -61,8 +62,9 @@ def analyze_paper(
         paper: Paper dict with title and citations_by_year.
         scraped_at: When the data was scraped.
         process_var: Process variance for Kalman filter.
-        obs_var: Observation variance for Kalman filter.
         min_count: Pseudocount to add before log transform.
+        obs_var: Constant observation variance (if not using overdispersion).
+        obs_overdispersion: Overdispersion factor φ for time-varying variance.
 
     Returns:
         Dict with years, observed counts, empirical rates, and smoothed rates.
@@ -100,11 +102,19 @@ def analyze_paper(
     # Transform to log space with pseudocount
     z = np.log(empirical + min_count)
 
+    # Determine observation variance
+    if obs_overdispersion is not None:
+        # Time-varying variance based on Poisson approximation
+        R_t = compute_obs_variance(empirical, obs_overdispersion, min_count)
+    else:
+        # Constant variance
+        R_t = obs_var if obs_var is not None else 0.3
+
     # Run Kalman smoother
     x_smooth, P_smooth = kalman_smoother_1d(
         z,
         process_var=process_var,
-        obs_var=obs_var,
+        obs_var=R_t,
         x0_mean=z[0],
         x0_var=1.0,
     )
@@ -163,14 +173,20 @@ def main() -> None:
     parser.add_argument(
         "--process-var",
         type=float,
-        default=0.15,
-        help="Process variance on log-rate random walk (default: 0.15)",
+        default=0.25,
+        help="Process variance on log-rate random walk (default: 0.25)",
     )
     parser.add_argument(
         "--obs-var",
         type=float,
-        default=0.3,
-        help="Observation noise variance on log counts (default: 0.3)",
+        default=None,
+        help="Constant observation noise variance on log counts",
+    )
+    parser.add_argument(
+        "--obs-overdispersion",
+        type=float,
+        default=0.56,
+        help="Overdispersion factor φ for time-varying observation variance (default: 0.56)",
     )
     parser.add_argument(
         "--min-count",
@@ -180,6 +196,10 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    # If obs-var is explicitly set, disable overdispersion
+    if args.obs_var is not None:
+        args.obs_overdispersion = None
 
     # Load input
     print(f"Loading {args.input}...")
@@ -201,22 +221,29 @@ def main() -> None:
             paper,
             scraped_at,
             process_var=args.process_var,
-            obs_var=args.obs_var,
             min_count=args.min_count,
+            obs_var=args.obs_var,
+            obs_overdispersion=args.obs_overdispersion,
         )
         check_citation_totals(paper, analyzed)
         analyzed_papers.append(analyzed)
+
+    # Build model metadata
+    model_info = {
+        "type": args.model,
+        "process_var": args.process_var,
+        "min_count": args.min_count,
+    }
+    if args.obs_overdispersion is not None:
+        model_info["obs_overdispersion"] = args.obs_overdispersion
+    else:
+        model_info["obs_var"] = args.obs_var
 
     # Build output
     result = {
         "user_id": data.get("user_id"),
         "scraped_at": data.get("scraped_at"),
-        "model": {
-            "type": args.model,
-            "process_var": args.process_var,
-            "obs_var": args.obs_var,
-            "min_count": args.min_count,
-        },
+        "model": model_info,
         "papers": analyzed_papers,
     }
 
