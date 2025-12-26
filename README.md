@@ -8,7 +8,7 @@ This project has three components:
 
 1. **Ingest** (`ingest/`) - Scrapes citation data from Google Scholar
 2. **Model** (`model/`) - Smooths citation rates using a Kalman filter
-3. **Visualization** - D3.js charts for GitHub Pages (planned)
+3. **Visualization** (`viz/`) - D3.js interactive charts
 
 ## Installation
 
@@ -61,6 +61,22 @@ python -m model.rates \
 Output: `results/citation_rates.json` with observed counts, empirical rates, and Kalman-smoothed rates with uncertainty.
 
 Default parameters (`--process-var 0.25 --obs-overdispersion 0.56`) were tuned from empirical data.
+
+### 4. View the visualization
+
+Open `viz/index.html` in a browser (requires a local server for fetch to work):
+
+```bash
+cd viz && python -m http.server 8000
+```
+
+Then open http://localhost:8000 in your browser.
+
+The visualization includes:
+- **Streamplot**: Stacked area chart showing all papers' smoothed citation rates over time, colored by publication year
+- **Line plot**: Per-paper view with empirical citations, smoothed rate, and uncertainty bands
+
+Click on any paper in the streamplot to view its details in the line plot.
 
 ## Data Formats
 

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Citation Rates Visualization</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Citation Rates</h1>
+        </header>
+
+        <section id="stream-plot-section">
+            <h2>All Papers: Smoothed Citation Rates</h2>
+            <div id="stream-plot"></div>
+        </section>
+
+        <section id="line-plot-section">
+            <div class="section-header">
+                <h2>Paper Citations Over Time</h2>
+                <select id="paper-select">
+                    <option value="">Select a paper...</option>
+                </select>
+            </div>
+            <div id="line-plot"></div>
+            <div class="legend" id="line-legend">
+                <span class="legend-item"><span class="legend-color empirical"></span> Empirical rate</span>
+                <span class="legend-item"><span class="legend-color smoothed"></span> Smoothed rate</span>
+                <span class="legend-item"><span class="legend-color uncertainty"></span> Uncertainty</span>
+            </div>
+        </section>
+
+        <div id="tooltip"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
