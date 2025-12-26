@@ -176,6 +176,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         data = await response.json();
         papers = data.papers;
 
+        // Set updated date in footer
+        if (data.scraped_at) {
+            const scrapedDate = new Date(data.scraped_at);
+            const formatted = scrapedDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            document.getElementById('updated-date').textContent = `Updated ${formatted}`;
+        }
+
         // Sort papers by first publication year (oldest first for streamplot)
         papers.sort((a, b) => Math.min(...a.years) - Math.min(...b.years));
 

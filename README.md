@@ -55,7 +55,8 @@ This performs a grid search over process variance and overdispersion, maximizing
 ```bash
 python -m model.rates \
   --input results/citations.json \
-  --output results/citation_rates.json
+  --output results/citation_rates.json \
+  --forecast-years 0
 ```
 
 Output: `results/citation_rates.json` with observed counts, empirical rates, and Kalman-smoothed rates with uncertainty.
