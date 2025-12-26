@@ -30,6 +30,20 @@ header h1 {
     color: #222;
 }
 
+header h1 .scholar-link {
+    font-size: 1rem;
+    font-weight: 400;
+}
+
+header h1 a {
+    color: #4a90d9;
+    text-decoration: none;
+}
+
+header h1 a:hover {
+    text-decoration: underline;
+}
+
 /* Toggle controls */
 .controls {
     display: flex;

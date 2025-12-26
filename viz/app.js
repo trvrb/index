@@ -5,13 +5,16 @@ const DATA_PATH = '../results/citation_rates.json';
 
 // Configuration
 const config = {
-    streamMinYear: 2012  // Minimum year to show in streamplot
+    name: 'Trevor Bedford',
+    scholar: 'RIi-1pAAAAAJ',
+    minYear: 2012  // Minimum year to show in plots
 };
 
 // Chart dimensions
 const margin = { top: 20, right: 30, bottom: 40, left: 60 };
 const lineChartHeight = 300;
 const streamChartHeight = 400;
+const hIndexChartHeight = 250;
 
 // Nextstrain color ramp
 // From https://github.com/nextstrain/auspice/blob/master/src/util/globals.js#L109
@@ -117,7 +120,7 @@ function buildPaperColors() {
     const pubYears = [...new Set(papers.map(p => Math.min(...p.years)))].sort((a, b) => a - b);
 
     // Filter to years >= streamMinYear for color assignment
-    const colorYears = pubYears.filter(y => y >= config.streamMinYear);
+    const colorYears = pubYears.filter(y => y >= config.minYear);
 
     // Group papers by publication year
     const papersByYear = {};
@@ -154,7 +157,7 @@ function buildPaperColors() {
     });
 
     // Papers before streamMinYear get a gray color
-    pubYears.filter(y => y < config.streamMinYear).forEach(year => {
+    pubYears.filter(y => y < config.minYear).forEach(year => {
         (papersByYear[year] || []).forEach(paperIdx => {
             paperColors[paperIdx] = '#888888';
         });
@@ -163,6 +166,11 @@ function buildPaperColors() {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
+    // Set page title with Google Scholar link
+    const scholarUrl = `https://scholar.google.com/citations?user=${config.scholar}`;
+    document.getElementById('page-title').innerHTML =
+        `${config.name} <span class="scholar-link">(<a href="${scholarUrl}" target="_blank" rel="noopener">Google Scholar</a>)</span>`;
+
     try {
         const response = await fetch(DATA_PATH);
         data = await response.json();
@@ -179,23 +187,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Build color mapping
         buildPaperColors();
 
+        // Find most cited paper
+        let maxCitations = -1;
+        papers.forEach((paper, i) => {
+            const total = paper.observed_citations.reduce((a, b) => a + b, 0);
+            if (total > maxCitations) {
+                maxCitations = total;
+                selectedPaperIndex = i;
+            }
+        });
+
         // Populate dropdown
         populateDropdown();
 
         // Draw initial charts
-        drawLinePlot(papers[0]);
+        drawLinePlot(papers[selectedPaperIndex]);
         drawStreamPlot();
+        drawHIndexPlot();
 
         // Handle window resize
         window.addEventListener('resize', debounce(() => {
             drawLinePlot(papers[selectedPaperIndex]);
             drawStreamPlot();
+            drawHIndexPlot();
         }, 250));
 
         // Toggle event listener
         document.getElementById('accumulated-toggle').addEventListener('change', (e) => {
             useAccumulated = e.target.checked;
-            updateStreamPlotTitle();
             drawLinePlot(papers[selectedPaperIndex]);
             drawStreamPlot();
         });
@@ -215,8 +234,8 @@ function populateDropdown() {
         select.appendChild(option);
     });
 
-    // Set first paper as selected
-    select.value = 0;
+    // Set most cited paper as selected
+    select.value = selectedPaperIndex;
 
     select.addEventListener('change', (e) => {
         selectedPaperIndex = parseInt(e.target.value);
@@ -482,8 +501,8 @@ function drawStreamPlot() {
     const g = svg.append('g')
         .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Filter years to start from config.streamMinYear
-    const streamYears = allYears.filter(y => y >= config.streamMinYear);
+    // Filter years to start from config.minYear
+    const streamYears = allYears.filter(y => y >= config.minYear);
 
     // Determine forecast years from first paper that has them
     const samplePaper = papers.find(p => p.forecast_years && p.forecast_years.length > 0);
@@ -646,12 +665,189 @@ function drawStreamPlot() {
     }
 }
 
-// Update streamplot section title based on toggle state
-function updateStreamPlotTitle() {
-    const title = useAccumulated
-        ? 'All Papers: Accumulated Citation Rates'
-        : 'All Papers: Smoothed Citation Rates';
-    document.getElementById('stream-plot-title').textContent = title;
+
+function drawHIndexPlot() {
+    const container = document.getElementById('hindex-plot');
+    const width = container.clientWidth;
+    const height = hIndexChartHeight;
+    const innerWidth = width - margin.left - margin.right;
+    const innerHeight = height - margin.top - margin.bottom;
+
+    // Clear previous
+    d3.select('#hindex-plot').selectAll('*').remove();
+
+    const svg = d3.select('#hindex-plot')
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height);
+
+    const g = svg.append('g')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    // Build year range
+    const samplePaper = papers.find(p => p.forecast_years && p.forecast_years.length > 0);
+    const forecastYears = samplePaper ? samplePaper.forecast_years : [];
+
+    // Filter years for plotting (but accumulate from all years)
+    const filteredYears = allYears.filter(y => y >= config.minYear);
+    const lastHistoricalYear = filteredYears.length > 0 ? filteredYears[filteredYears.length - 1] : null;
+    const plotYears = [...filteredYears, ...forecastYears];
+
+    // Track accumulated citations per paper
+    const accumulated = {};
+    papers.forEach((_, i) => { accumulated[i] = 0; });
+
+    // Pre-accumulate citations from years before minYear
+    allYears.filter(y => y < config.minYear).forEach(year => {
+        papers.forEach((paper, i) => {
+            const yearIdx = paper.years.indexOf(year);
+            if (yearIdx >= 0) {
+                accumulated[i] += paper.smoothed_rate[yearIdx];
+            }
+        });
+    });
+
+    // Compute h-index at each plotted year
+    const hIndexData = plotYears.map(year => {
+        // Update accumulated values for this year
+        papers.forEach((paper, i) => {
+            const yearIdx = paper.years.indexOf(year);
+            if (yearIdx >= 0) {
+                // Historical year
+                accumulated[i] += paper.smoothed_rate[yearIdx];
+            } else if (paper.forecast_years && paper.forecast_years.includes(year)) {
+                // Forecast year
+                const forecastIdx = paper.forecast_years.indexOf(year);
+                accumulated[i] += paper.forecast_rate_median[forecastIdx];
+            }
+            // If year is before paper started, accumulated stays at previous value
+        });
+
+        // Compute h-index from accumulated values
+        const citations = Object.values(accumulated).sort((a, b) => b - a);
+        let h = 0;
+        for (let i = 0; i < citations.length; i++) {
+            if (citations[i] >= i + 1) {
+                h = i + 1;
+            } else {
+                break;
+            }
+        }
+
+        return {
+            year,
+            hIndex: h,
+            isForecast: forecastYears.includes(year)
+        };
+    });
+
+    // Split into historical and forecast data
+    const historicalData = hIndexData.filter(d => !d.isForecast);
+    const forecastData = hIndexData.filter(d => d.isForecast);
+
+    // Scales
+    const xScale = d3.scaleLinear()
+        .domain(d3.extent(plotYears))
+        .range([0, innerWidth]);
+
+    const yMax = d3.max(hIndexData, d => d.hIndex) * 1.1;
+    const yScale = d3.scaleLinear()
+        .domain([0, Math.max(yMax, 1)])
+        .range([innerHeight, 0]);
+
+    // Axes
+    const xAxis = d3.axisBottom(xScale)
+        .tickFormat(d3.format('d'))
+        .ticks(10);
+
+    const yAxis = d3.axisLeft(yScale)
+        .ticks(Math.min(6, d3.max(hIndexData, d => d.hIndex) || 6))
+        .tickFormat(d3.format('d'));
+
+    g.append('g')
+        .attr('class', 'axis x-axis')
+        .attr('transform', `translate(0,${innerHeight})`)
+        .call(xAxis);
+
+    g.append('g')
+        .attr('class', 'axis y-axis')
+        .call(yAxis);
+
+    // Y-axis label
+    g.append('text')
+        .attr('class', 'axis-label')
+        .attr('transform', 'rotate(-90)')
+        .attr('x', -innerHeight / 2)
+        .attr('y', -45)
+        .attr('text-anchor', 'middle')
+        .text('H-Index');
+
+    // Line generator
+    const lineGenerator = d3.line()
+        .x(d => xScale(d.year))
+        .y(d => yScale(d.hIndex))
+        .curve(d3.curveMonotoneX);
+
+    // Historical line
+    if (historicalData.length > 0) {
+        g.append('path')
+            .datum(historicalData)
+            .attr('class', 'smoothed-line')
+            .attr('d', lineGenerator);
+    }
+
+    // Forecast line (with bridge point for continuity)
+    if (forecastData.length > 0 && historicalData.length > 0) {
+        const lastHistorical = historicalData[historicalData.length - 1];
+        const forecastWithBridge = [lastHistorical, ...forecastData];
+
+        g.append('path')
+            .datum(forecastWithBridge)
+            .attr('class', 'forecast-line')
+            .attr('d', lineGenerator);
+
+        // Demarcation line
+        const demarcationX = xScale(lastHistoricalYear + 0.5);
+        g.append('line')
+            .attr('class', 'demarcation-line')
+            .attr('x1', demarcationX)
+            .attr('x2', demarcationX)
+            .attr('y1', 0)
+            .attr('y2', innerHeight);
+    }
+
+    // Tooltip for data points
+    const tooltip = d3.select('#tooltip');
+
+    // Add blue circles at each data point
+    g.selectAll('.hindex-point')
+        .data(hIndexData)
+        .join('circle')
+        .attr('class', 'hindex-point')
+        .attr('cx', d => xScale(d.year))
+        .attr('cy', d => yScale(d.hIndex))
+        .attr('r', 5)
+        .attr('fill', d => d.isForecast ? 'none' : '#4a90d9')
+        .attr('stroke', '#4a90d9')
+        .attr('stroke-width', 1.5)
+        .attr('cursor', 'pointer')
+        .on('mouseover', (event, d) => {
+            const label = d.isForecast ? ' (forecast)' : '';
+            tooltip
+                .classed('visible', true)
+                .html(`
+                    <div class="title">${d.year}${label}</div>
+                    <div class="value">H-Index: ${d.hIndex}</div>
+                `);
+        })
+        .on('mousemove', (event) => {
+            tooltip
+                .style('left', (event.pageX + 15) + 'px')
+                .style('top', (event.pageY - 10) + 'px');
+        })
+        .on('mouseout', () => {
+            tooltip.classed('visible', false);
+        });
 }
 
 // Utility: debounce function

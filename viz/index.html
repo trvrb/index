@@ -10,7 +10,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>Citation Rates</h1>
+            <h1 id="page-title"></h1>
             <div class="controls">
                 <label class="toggle">
                     <span class="toggle-label">Yearly</span>
@@ -21,14 +21,19 @@
             </div>
         </header>
 
+        <section id="hindex-section">
+            <h2>H-index over time</h2>
+            <div id="hindex-plot"></div>
+        </section>
+
         <section id="stream-plot-section">
-            <h2 id="stream-plot-title">All Papers: Smoothed Citation Rates</h2>
+            <h2 id="stream-plot-title">All paper citations over time</h2>
             <div id="stream-plot"></div>
         </section>
 
         <section id="line-plot-section">
             <div class="section-header">
-                <h2>Paper Citations Over Time</h2>
+                <h2>Specific paper citations over time</h2>
                 <select id="paper-select">
                     <option value="">Select a paper...</option>
                 </select>
