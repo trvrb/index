@@ -109,6 +109,7 @@ let data = null;
 let papers = [];
 let allYears = [];
 let selectedPaperIndex = 0;
+let useAccumulated = false;
 
 // Build color mapping for papers based on publication year
 function buildPaperColors() {
@@ -191,6 +192,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             drawStreamPlot();
         }, 250));
 
+        // Toggle event listener
+        document.getElementById('accumulated-toggle').addEventListener('change', (e) => {
+            useAccumulated = e.target.checked;
+            updateStreamPlotTitle();
+            drawLinePlot(papers[selectedPaperIndex]);
+            drawStreamPlot();
+        });
+
     } catch (error) {
         console.error('Error loading data:', error);
     }
@@ -234,7 +243,7 @@ function drawLinePlot(paper) {
         .attr('transform', `translate(${margin.left},${margin.top})`);
 
     // Prepare historical data
-    const lineData = paper.years.map((year, i) => ({
+    let lineData = paper.years.map((year, i) => ({
         year,
         empirical: paper.empirical_rate[i],
         smoothed: paper.smoothed_rate[i],
@@ -243,11 +252,47 @@ function drawLinePlot(paper) {
 
     // Prepare forecast data (if available)
     const hasForecast = paper.forecast_years && paper.forecast_years.length > 0;
-    const forecastData = hasForecast ? paper.forecast_years.map((year, i) => ({
+    let forecastData = hasForecast ? paper.forecast_years.map((year, i) => ({
         year,
         mean: paper.forecast_rate_median[i],
-        std: paper.forecast_rate_std[i]
+        std: paper.forecast_rate_std[i],
+        sampled: paper.forecast_sampled_rate ? paper.forecast_sampled_rate[i] : null
     })) : [];
+
+    // Apply accumulated transformation if enabled
+    if (useAccumulated) {
+        // Cumulative sum for historical data
+        let cumEmpirical = 0;
+        let cumSmoothed = 0;
+        lineData = lineData.map(d => {
+            cumEmpirical += d.empirical;
+            cumSmoothed += d.smoothed;
+            return {
+                year: d.year,
+                empirical: cumEmpirical,
+                smoothed: cumSmoothed,
+                std: d.std  // Keep yearly std for display (accumulating variance is complex)
+            };
+        });
+
+        // Continue cumulative sum for forecast
+        if (hasForecast) {
+            let cumForecast = cumSmoothed;
+            let cumSampled = cumEmpirical;
+            forecastData = forecastData.map(d => {
+                cumForecast += d.mean;
+                if (d.sampled !== null) {
+                    cumSampled += d.sampled;
+                }
+                return {
+                    year: d.year,
+                    mean: cumForecast,
+                    std: d.std,  // Keep yearly std
+                    sampled: d.sampled !== null ? cumSampled : null
+                };
+            });
+        }
+    }
 
     // Last historical year for demarcation
     const lastHistoricalYear = paper.years[paper.years.length - 1];
@@ -294,7 +339,7 @@ function drawLinePlot(paper) {
         .attr('x', -innerHeight / 2)
         .attr('y', -45)
         .attr('text-anchor', 'middle')
-        .text('Citations per year');
+        .text(useAccumulated ? 'Accumulated citations' : 'Citations per year');
 
     // Uncertainty band
     const areaGenerator = d3.area()
@@ -389,12 +434,8 @@ function drawLinePlot(paper) {
             .attr('y2', innerHeight);
 
         // Forecast sampled points (open red circles)
-        if (paper.forecast_sampled_rate && paper.forecast_sampled_rate.length > 0) {
-            const sampledData = paper.forecast_years.map((year, i) => ({
-                year,
-                sampled: paper.forecast_sampled_rate[i]
-            }));
-
+        const sampledData = forecastData.filter(d => d.sampled !== null);
+        if (sampledData.length > 0) {
             g.selectAll('.forecast-sample-point')
                 .data(sampledData)
                 .join('circle')
@@ -403,11 +444,12 @@ function drawLinePlot(paper) {
                 .attr('cy', d => yScale(d.sampled))
                 .attr('r', 5)
                 .on('mouseover', (event, d) => {
+                    const label = useAccumulated ? 'Accumulated' : 'Sampled rate';
                     tooltip
                         .classed('visible', true)
                         .html(`
                             <div class="title">${d.year} (forecast sample)</div>
-                            <div class="value">Sampled rate: ${d.sampled.toFixed(1)}</div>
+                            <div class="value">${label}: ${d.sampled.toFixed(1)}</div>
                         `);
                 })
                 .on('mousemove', (event) => {
@@ -451,9 +493,9 @@ function drawStreamPlot() {
     // Combine historical and forecast years
     const allStreamYears = [...streamYears, ...forecastYears];
 
-    // Build stacked data: for each year, get smoothed_rate or forecast_rate_mean
+    // Build stacked data: for each year, get smoothed rate
     // Papers are already sorted by first publication year
-    const stackData = allStreamYears.map(year => {
+    let stackData = allStreamYears.map(year => {
         const row = { year, isForecast: forecastYears.includes(year) };
         papers.forEach((paper, i) => {
             const yearIndex = paper.years.indexOf(year);
@@ -466,12 +508,28 @@ function drawStreamPlot() {
                 row[`paper_${i}`] = paper.forecast_rate_median[forecastIndex];
             } else {
                 // Year not in paper's range
-                const firstYear = Math.min(...paper.years);
-                row[`paper_${i}`] = year < firstYear ? 0 : 0;
+                row[`paper_${i}`] = 0;
             }
         });
         return row;
     });
+
+    // Apply accumulated transformation if enabled
+    if (useAccumulated) {
+        // Track cumulative values for each paper
+        const cumulative = {};
+        papers.forEach((_, i) => { cumulative[`paper_${i}`] = 0; });
+
+        stackData = stackData.map(row => {
+            const newRow = { year: row.year, isForecast: row.isForecast };
+            papers.forEach((_, i) => {
+                const key = `paper_${i}`;
+                cumulative[key] += row[key];
+                newRow[key] = cumulative[key];
+            });
+            return newRow;
+        });
+    }
 
     const keys = papers.map((_, i) => `paper_${i}`);
 
@@ -573,7 +631,7 @@ function drawStreamPlot() {
         .attr('x', -innerHeight / 2)
         .attr('y', -45)
         .attr('text-anchor', 'middle')
-        .text('Citations per year');
+        .text(useAccumulated ? 'Accumulated citations' : 'Citations per year');
 
     // Demarcation line between historical and forecast
     if (forecastYears.length > 0 && lastHistoricalYear) {
@@ -586,6 +644,14 @@ function drawStreamPlot() {
             .attr('y1', 0)
             .attr('y2', innerHeight);
     }
+}
+
+// Update streamplot section title based on toggle state
+function updateStreamPlotTitle() {
+    const title = useAccumulated
+        ? 'All Papers: Accumulated Citation Rates'
+        : 'All Papers: Smoothed Citation Rates';
+    document.getElementById('stream-plot-title').textContent = title;
 }
 
 // Utility: debounce function

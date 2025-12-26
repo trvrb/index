@@ -11,10 +11,18 @@
     <div class="container">
         <header>
             <h1>Citation Rates</h1>
+            <div class="controls">
+                <label class="toggle">
+                    <span class="toggle-label">Yearly</span>
+                    <input type="checkbox" id="accumulated-toggle">
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-label">Accumulated</span>
+                </label>
+            </div>
         </header>
 
         <section id="stream-plot-section">
-            <h2>All Papers: Smoothed Citation Rates</h2>
+            <h2 id="stream-plot-title">All Papers: Smoothed Citation Rates</h2>
             <div id="stream-plot"></div>
         </section>
 

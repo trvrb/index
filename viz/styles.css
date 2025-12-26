@@ -18,6 +18,9 @@ body {
 }
 
 header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 30px;
 }
 
@@ -25,6 +28,59 @@ header h1 {
     font-size: 1.8rem;
     font-weight: 600;
     color: #222;
+}
+
+/* Toggle controls */
+.controls {
+    display: flex;
+    gap: 24px;
+}
+
+.toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.toggle-label {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.toggle input {
+    display: none;
+}
+
+.toggle-slider {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background: #ccc;
+    border-radius: 10px;
+    transition: background 0.2s ease;
+}
+
+.toggle-slider::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.toggle input:checked + .toggle-slider {
+    background: #4a90d9;
+}
+
+.toggle input:checked + .toggle-slider::after {
+    transform: translateX(16px);
 }
 
 section {
@@ -220,6 +276,17 @@ section h2 {
 
 /* Responsive */
 @media (max-width: 768px) {
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .controls {
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
     .section-header {
         flex-direction: column;
         align-items: flex-start;
