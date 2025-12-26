@@ -1,7 +1,7 @@
 // Citation Rates Visualization
 // D3.js v7
 
-const DATA_PATH = '../results/citation_rates.json';
+const DATA_PATH = 'data/citation_rates.json';
 
 // Configuration
 const config = {

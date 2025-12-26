@@ -8,7 +8,7 @@ This project has three components:
 
 1. **Ingest** (`ingest/`) - Scrapes citation data from Google Scholar
 2. **Model** (`model/`) - Smooths citation rates using a Kalman filter
-3. **Visualization** (`viz/`) - D3.js interactive charts
+3. **Visualization** (root) - D3.js interactive charts, deployed via GitHub Pages
 
 ## Installation
 
@@ -62,21 +62,44 @@ Output: `results/citation_rates.json` with observed counts, empirical rates, and
 
 Default parameters (`--process-var 0.25 --obs-overdispersion 0.56`) were tuned from empirical data.
 
-### 4. View the visualization
-
-Open `viz/index.html` in a browser (requires a local server for fetch to work):
+To update the GitHub Pages visualization, copy the output to the versioned data directory:
 
 ```bash
-cd viz && python -m http.server 8000
+cp results/citation_rates.json data/citation_rates.json
+```
+
+### 4. View the visualization
+
+The visualization is deployed via GitHub Pages at: https://trvrb.github.io/index
+
+For local development, run a server from the repository root:
+
+```bash
+python -m http.server 8000
 ```
 
 Then open http://localhost:8000 in your browser.
 
 The visualization includes:
-- **Streamplot**: Stacked area chart showing all papers' smoothed citation rates over time, colored by publication year
-- **Line plot**: Per-paper view with empirical citations, smoothed rate, and uncertainty bands
+- **H-index over time**: Tracks how the h-index evolves across years
+- **All paper citations over time**: Stacked area chart showing all papers' smoothed citation rates, colored by publication year
+- **Specific paper citations over time**: Per-paper view with empirical citations, smoothed rate, and uncertainty bands
 
 Click on any paper in the streamplot to view its details in the line plot.
+
+## Project Structure
+
+```
+index/
+├── index.html          # Visualization entry point
+├── app.js              # D3.js visualization code
+├── styles.css          # Styling
+├── data/
+│   └── citation_rates.json  # Versioned data for GitHub Pages
+├── results/            # Local working outputs (gitignored)
+├── ingest/             # Google Scholar scraper
+└── model/              # Kalman filter smoothing
+```
 
 ## Data Formats
 
