@@ -141,6 +141,20 @@ section h2 {
     border-color: #666;
 }
 
+#year-select {
+    font-size: 0.9rem;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+}
+
+#year-select:focus {
+    outline: none;
+    border-color: #666;
+}
+
 #line-plot, #stream-plot {
     width: 100%;
     overflow: hidden;
@@ -215,6 +229,30 @@ section h2 {
 
 .stream-layer.faded {
     opacity: 0.3;
+}
+
+/* Treemap */
+#treemap-plot {
+    width: 100%;
+    overflow: hidden;
+}
+
+.treemap-cell {
+    stroke: white;
+    stroke-width: 1px;
+    transition: stroke 0.15s ease, stroke-width 0.15s ease;
+}
+
+.treemap-cell:hover {
+    stroke: #333;
+    stroke-width: 2px;
+}
+
+.treemap-label {
+    font-size: 11px;
+    fill: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    pointer-events: none;
 }
 
 /* Legend */

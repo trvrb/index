@@ -15,6 +15,7 @@ const margin = { top: 20, right: 30, bottom: 40, left: 60 };
 const lineChartHeight = 300;
 const streamChartHeight = 400;
 const hIndexChartHeight = 250;
+const treemapHeight = 400;
 
 // Nextstrain color ramp
 // From https://github.com/nextstrain/auspice/blob/master/src/util/globals.js#L109
@@ -113,6 +114,7 @@ let papers = [];
 let allYears = [];
 let selectedPaperIndex = 0;
 let useAccumulated = false;
+let selectedTreemapYear = null;
 
 // Build color mapping for papers based on publication year
 function buildPaperColors() {
@@ -208,19 +210,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // Populate dropdown
+        // Populate dropdowns
         populateDropdown();
+        populateYearDropdown();
 
         // Draw initial charts
         drawLinePlot(papers[selectedPaperIndex]);
         drawStreamPlot();
         drawHIndexPlot();
+        drawTreemap();
 
         // Handle window resize
         window.addEventListener('resize', debounce(() => {
             drawLinePlot(papers[selectedPaperIndex]);
             drawStreamPlot();
             drawHIndexPlot();
+            drawTreemap();
         }, 250));
 
         // Toggle event listener
@@ -228,6 +233,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             useAccumulated = e.target.checked;
             drawLinePlot(papers[selectedPaperIndex]);
             drawStreamPlot();
+            drawTreemap();
         });
 
     } catch (error) {
@@ -251,6 +257,29 @@ function populateDropdown() {
     select.addEventListener('change', (e) => {
         selectedPaperIndex = parseInt(e.target.value);
         drawLinePlot(papers[selectedPaperIndex]);
+    });
+}
+
+function populateYearDropdown() {
+    const select = document.getElementById('year-select');
+
+    // Get years >= minYear, reversed so latest is first
+    const years = allYears.filter(y => y >= config.minYear).reverse();
+
+    years.forEach(year => {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        select.appendChild(option);
+    });
+
+    // Default to latest year (first in list)
+    selectedTreemapYear = years[0];
+    select.value = selectedTreemapYear;
+
+    select.addEventListener('change', (e) => {
+        selectedTreemapYear = parseInt(e.target.value);
+        drawTreemap();
     });
 }
 
@@ -858,6 +887,137 @@ function drawHIndexPlot() {
         })
         .on('mouseout', () => {
             tooltip.classed('visible', false);
+        });
+}
+
+function drawTreemap() {
+    const container = document.getElementById('treemap-plot');
+    const width = container.clientWidth;
+    const height = treemapHeight;
+
+    // Clear previous
+    d3.select('#treemap-plot').selectAll('*').remove();
+
+    if (!selectedTreemapYear) return;
+
+    // Build treemap data for selected year
+    const treemapData = [];
+
+    papers.forEach((paper, i) => {
+        let value = 0;
+
+        if (useAccumulated) {
+            // Sum smoothed_rate from start up to selected year
+            for (let j = 0; j < paper.years.length; j++) {
+                if (paper.years[j] <= selectedTreemapYear) {
+                    value += paper.smoothed_rate[j];
+                }
+            }
+        } else {
+            // Just get this year's value
+            const yearIdx = paper.years.indexOf(selectedTreemapYear);
+            if (yearIdx >= 0) {
+                value = paper.smoothed_rate[yearIdx];
+            }
+        }
+
+        if (value > 0) {
+            treemapData.push({
+                name: paper.title,
+                value: value,
+                paperIndex: i
+            });
+        }
+    });
+
+    // Sort by value descending for better treemap layout
+    treemapData.sort((a, b) => b.value - a.value);
+
+    if (treemapData.length === 0) {
+        // No data for this year
+        const svg = d3.select('#treemap-plot')
+            .append('svg')
+            .attr('width', width)
+            .attr('height', height);
+
+        svg.append('text')
+            .attr('x', width / 2)
+            .attr('y', height / 2)
+            .attr('text-anchor', 'middle')
+            .attr('fill', '#888')
+            .text('No citation data for this year');
+        return;
+    }
+
+    // Create hierarchy
+    const root = d3.hierarchy({ children: treemapData })
+        .sum(d => d.value);
+
+    // Create treemap layout
+    d3.treemap()
+        .size([width, height])
+        .padding(2)
+        .round(true)(root);
+
+    const svg = d3.select('#treemap-plot')
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height);
+
+    const tooltip = d3.select('#tooltip');
+
+    // Draw cells
+    const cells = svg.selectAll('g')
+        .data(root.leaves())
+        .join('g')
+        .attr('transform', d => `translate(${d.x0},${d.y0})`);
+
+    cells.append('rect')
+        .attr('class', 'treemap-cell')
+        .attr('width', d => d.x1 - d.x0)
+        .attr('height', d => d.y1 - d.y0)
+        .attr('fill', d => paperColors[d.data.paperIndex])
+        .attr('cursor', 'pointer')
+        .on('mouseover', (event, d) => {
+            const modeLabel = useAccumulated ? 'Accumulated citations' : 'Citations';
+            tooltip
+                .classed('visible', true)
+                .html(`
+                    <div class="title">${d.data.name}</div>
+                    <div class="value">${modeLabel}: ${Math.round(d.data.value)}</div>
+                `);
+        })
+        .on('mousemove', (event) => {
+            tooltip
+                .style('left', (event.pageX + 15) + 'px')
+                .style('top', (event.pageY - 10) + 'px');
+        })
+        .on('mouseout', () => {
+            tooltip.classed('visible', false);
+        })
+        .on('click', (event, d) => {
+            // Jump to line plot for this paper
+            selectedPaperIndex = d.data.paperIndex;
+            document.getElementById('paper-select').value = selectedPaperIndex;
+            drawLinePlot(papers[selectedPaperIndex]);
+            // Scroll to line plot
+            document.getElementById('line-plot-section').scrollIntoView({ behavior: 'smooth' });
+        });
+
+    // Add labels for cells large enough
+    cells.append('text')
+        .attr('class', 'treemap-label')
+        .attr('x', 4)
+        .attr('y', 16)
+        .text(d => {
+            const cellWidth = d.x1 - d.x0;
+            const cellHeight = d.y1 - d.y0;
+            // Only show label if cell is large enough
+            if (cellWidth < 60 || cellHeight < 25) return '';
+            // Truncate title to fit
+            const maxChars = Math.floor(cellWidth / 7);
+            const title = d.data.name;
+            return title.length > maxChars ? title.slice(0, maxChars - 1) + '…' : title;
         });
 }
 
