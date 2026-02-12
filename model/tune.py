@@ -47,11 +47,11 @@ def prepare_paper_data(
     paper: dict[str, Any],
     scraped_at: datetime,
     min_count: float,
-) -> tuple[np.ndarray, np.ndarray] | None:
-    """Prepare observation and empirical rate arrays for a paper.
+) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
+    """Prepare observation, empirical rate, and exposure arrays for a paper.
 
     Returns:
-        Tuple of (z, empirical_rate) or None if paper has no citations.
+        Tuple of (z, empirical_rate, exposure) or None if paper has no citations.
     """
     citations = paper.get("citations_by_year", {})
     if not citations:
@@ -72,11 +72,11 @@ def prepare_paper_data(
     # Transform to log space
     z = np.log(empirical + min_count)
 
-    return z, empirical
+    return z, empirical, exposure
 
 
 def compute_total_log_likelihood(
-    papers_data: list[tuple[np.ndarray, np.ndarray]],
+    papers_data: list[tuple[np.ndarray, np.ndarray, np.ndarray]],
     process_var: float,
     overdispersion: float,
     min_count: float,
@@ -85,7 +85,7 @@ def compute_total_log_likelihood(
     """Compute total log-likelihood across all papers for given hyperparameters.
 
     Args:
-        papers_data: List of (z, empirical_rate) tuples for each paper.
+        papers_data: List of (z, empirical_rate, exposure) tuples for each paper.
         process_var: Process variance q.
         overdispersion: Overdispersion factor φ.
         min_count: Pseudocount for log transform.
@@ -96,13 +96,13 @@ def compute_total_log_likelihood(
     """
     total_log_lik = 0.0
 
-    for z, empirical in papers_data:
+    for z, empirical, exposure in papers_data:
         if len(z) < 2:
             # Skip papers with fewer than 2 years
             continue
 
         # Compute time-varying observation variance
-        R_t = compute_obs_variance(empirical, overdispersion, min_count, sigma_min_sq)
+        R_t = compute_obs_variance(empirical, overdispersion, min_count, sigma_min_sq, exposure=exposure)
 
         # Run Kalman filter to get log-likelihood
         _, _, _, _, log_lik = kalman_filter_1d(
@@ -220,7 +220,7 @@ def main() -> None:
     print(f"  {len(papers_data)} papers have citation data")
 
     # Count papers with sufficient data
-    n_valid = sum(1 for z, _ in papers_data if len(z) >= 2)
+    n_valid = sum(1 for z, _, _ in papers_data if len(z) >= 2)
     print(f"  {n_valid} papers have >= 2 years of data")
 
     # Run grid search
