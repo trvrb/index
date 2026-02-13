@@ -115,6 +115,7 @@ let allYears = [];
 let selectedPaperIndex = 0;
 let useAccumulated = false;
 let selectedTreemapYear = null;
+let currentYear = null;  // Year parsed from scraped_at, used to flag partial-year data
 
 // Build color mapping for papers based on publication year
 function buildPaperColors() {
@@ -178,9 +179,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         data = await response.json();
         papers = data.papers;
 
-        // Set updated date in footer
+        // Parse scraped_at for current year and footer date
         if (data.scraped_at) {
             const scrapedDate = new Date(data.scraped_at);
+            currentYear = scrapedDate.getFullYear();
             const formatted = scrapedDate.toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
@@ -429,7 +431,8 @@ function drawLinePlot(paper) {
     g.selectAll('.empirical-point')
         .data(lineData)
         .join('circle')
-        .attr('class', 'empirical-point')
+        .attr('class', d => paper.exposure_fraction && paper.exposure_fraction[paper.years.indexOf(d.year)] < 1
+            ? 'forecast-sample-point' : 'empirical-point')
         .attr('cx', d => xScale(d.year))
         .attr('cy', d => yScale(d.empirical))
         .attr('r', 5)
@@ -777,7 +780,8 @@ function drawHIndexPlot() {
         return {
             year,
             hIndex: h,
-            isForecast: forecastYears.includes(year)
+            isForecast: forecastYears.includes(year),
+            isPartialYear: currentYear !== null && year === currentYear
         };
     });
 
@@ -867,12 +871,12 @@ function drawHIndexPlot() {
         .attr('cx', d => xScale(d.year))
         .attr('cy', d => yScale(d.hIndex))
         .attr('r', 5)
-        .attr('fill', d => d.isForecast ? 'none' : '#4a90d9')
+        .attr('fill', d => (d.isForecast || d.isPartialYear) ? 'white' : '#4a90d9')
         .attr('stroke', '#4a90d9')
         .attr('stroke-width', 1.5)
         .attr('cursor', 'pointer')
         .on('mouseover', (event, d) => {
-            const label = d.isForecast ? ' (forecast)' : '';
+            const label = d.isForecast ? ' (forecast)' : d.isPartialYear ? ' (projection)' : '';
             tooltip
                 .classed('visible', true)
                 .html(`

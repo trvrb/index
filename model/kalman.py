@@ -19,22 +19,30 @@ def compute_obs_variance(
     overdispersion: float = 1.0,
     min_count: float = 0.5,
     sigma_min_sq: float = 0.01,
+    exposure: np.ndarray | None = None,
 ) -> np.ndarray:
     """Compute time-varying observation variance based on Poisson approximation.
 
     For Poisson counts, Var(log y) ≈ 1/λ. We use:
-        R_t = φ * (1 / (rate + min_count)) + σ_min²
+        R_t = φ * (1 / (rate * exposure + min_count)) + σ_min²
+
+    The denominator uses the actual expected count (rate * exposure) rather than
+    the annualized rate, so partial-year observations correctly receive higher
+    variance and are down-weighted by the Kalman filter.
 
     Args:
         empirical_rate: Annualized citation rates per year.
         overdispersion: Global overdispersion factor φ (≥1 for overdispersed data).
         min_count: Pseudocount to avoid division by zero.
         sigma_min_sq: Floor variance to prevent R_t from getting too small.
+        exposure: Fraction of each year observed (default 1.0 for all years).
 
     Returns:
         Array of observation variances R_t for each time point.
     """
-    base_R = 1.0 / (empirical_rate + min_count)
+    if exposure is None:
+        exposure = np.ones_like(empirical_rate)
+    base_R = 1.0 / (empirical_rate * exposure + min_count)
     R_t = overdispersion * base_R + sigma_min_sq
     return R_t
 

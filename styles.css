@@ -99,6 +99,13 @@ header h1 a:hover {
     transform: translateX(16px);
 }
 
+.subtitle {
+    color: #666;
+    font-size: 0.95rem;
+    margin-top: -20px;
+    margin-bottom: 24px;
+}
+
 section {
     background: white;
     border-radius: 8px;
@@ -213,7 +220,7 @@ section h2 {
 }
 
 .forecast-sample-point {
-    fill: none;
+    fill: white;
     stroke: #e74c3c;
     stroke-width: 1.5;
 }

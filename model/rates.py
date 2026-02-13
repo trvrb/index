@@ -108,7 +108,7 @@ def analyze_paper(
     # Determine observation variance
     if obs_overdispersion is not None:
         # Time-varying variance based on Poisson approximation
-        R_t = compute_obs_variance(empirical, obs_overdispersion, min_count)
+        R_t = compute_obs_variance(empirical, obs_overdispersion, min_count, exposure=exposure)
     else:
         # Constant variance
         R_t = obs_var if obs_var is not None else 0.3
@@ -260,8 +260,8 @@ def main() -> None:
     parser.add_argument(
         "--forecast-years",
         type=int,
-        default=5,
-        help="Number of years to forecast into the future (default: 5)",
+        default=0,
+        help="Number of years to forecast into the future (default: 0)",
     )
 
     args = parser.parse_args()
