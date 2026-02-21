@@ -122,9 +122,9 @@ def analyze_paper(
         x0_var=1.0,
     )
 
-    # Back-transform to rate space
-    smoothed_rate = np.exp(x_smooth)
-    smoothed_std = smoothed_rate * np.sqrt(P_smooth)
+    # Back-transform to rate space (subtract pseudocount added before log transform)
+    smoothed_rate = np.maximum(0, np.exp(x_smooth) - min_count)
+    smoothed_std = np.exp(x_smooth) * np.sqrt(P_smooth)
 
     result = {
         "title": paper["title"],
@@ -165,7 +165,7 @@ def analyze_paper(
             f_log_var.append(float(var_h))
 
             # Transform to rate space (lognormal distribution)
-            median_lambda = math.exp(mean_h)
+            median_lambda = max(0, math.exp(mean_h) - min_count)
             var_lambda = (math.exp(var_h) - 1.0) * math.exp(2 * mean_h + var_h)
             std_lambda = math.sqrt(var_lambda)
 
@@ -181,7 +181,7 @@ def analyze_paper(
 
             # Sample observed log-rate with observation noise
             sampled_log_rate = np.random.normal(log_rate_sample, math.sqrt(R_h))
-            sampled_rate = math.exp(sampled_log_rate)
+            sampled_rate = max(0, math.exp(sampled_log_rate) - min_count)
 
             f_sampled_log_rate.append(float(sampled_log_rate))
             f_sampled_rate.append(float(sampled_rate))
