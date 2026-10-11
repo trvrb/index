@@ -266,12 +266,8 @@ function selectPaper(paperIndex, scroll = true) {
 }
 
 function renderSubtitle() {
-    const through = formatDate(scrapedDate, { month: 'long', day: 'numeric' });
-    const pct = Math.round(data.exposure_fraction_current * 100);
     document.getElementById('subtitle').textContent =
-        `Yearly citation rates smoothed with a Poisson state-space model. ` +
-        `${currentYear} data run through ${through} (${pct}% of the year); ` +
-        `${currentYear} year-end values and later years are projections with ${intervalLabel()} intervals.`;
+        'Yearly citation rates smoothed with a Poisson state-space model.';
 }
 
 function renderStats() {
@@ -411,6 +407,32 @@ function drawProjectedRegion(g, xScale, innerHeight) {
         .text('projected');
 }
 
+// Draw a line solid left of the projected region and dashed within it
+let clipCounter = 0;
+function drawSplitLine(g, datum, line, xScale, innerHeight) {
+    const [x0, x1] = xScale.range();
+    const split = Math.max(x0, Math.min(x1, xScale(currentYear - 0.5)));
+    const pad = 10;  // keep stroke ends at the plot edges
+    [
+        { cls: 'smoothed-line', x: x0 - pad, width: split - x0 + pad },
+        { cls: 'forecast-line', x: split, width: x1 - split + pad }
+    ].forEach(({ cls, x, width }) => {
+        const id = `line-clip-${++clipCounter}`;
+        g.append('clipPath')
+            .attr('id', id)
+            .append('rect')
+            .attr('x', x)
+            .attr('y', -pad)
+            .attr('width', Math.max(0, width))
+            .attr('height', innerHeight + 2 * pad);
+        g.append('path')
+            .datum(datum)
+            .attr('class', cls)
+            .attr('clip-path', `url(#${id})`)
+            .attr('d', line);
+    });
+}
+
 function attachTooltip(selection, html) {
     const tooltip = d3.select('#tooltip');
     selection
@@ -437,7 +459,6 @@ function drawHIndexPlot() {
     const history = s.years
         .map((year, i) => ({ year, value: s.h_index[i] }))
         .filter(d => d.year >= config.minYear && d.year < currentYear);
-    const toDate = { year: currentYear, value: s.h_index_to_date };
     const projections = f.years.map((year, h) => ({
         year,
         value: f.h_index_q50[h],
@@ -460,29 +481,20 @@ function drawHIndexPlot() {
         .x(d => xScale(d.year))
         .y(d => yScale(d.value));
 
-    // Projection band and dashed median, bridged from the last full year
+    // Projection band, bridged from the last full year
     const bridge = history.length > 0
         ? [{ ...history[history.length - 1], lower: history[history.length - 1].value, upper: history[history.length - 1].value }]
         : [];
-    const fan = [...bridge, ...projections];
 
     g.append('path')
-        .datum(fan)
+        .datum([...bridge, ...projections])
         .attr('class', 'forecast-area')
         .attr('d', d3.area()
             .x(d => xScale(d.year))
             .y0(d => yScale(d.lower))
             .y1(d => yScale(d.upper)));
 
-    g.append('path')
-        .datum(fan)
-        .attr('class', 'forecast-line')
-        .attr('d', line);
-
-    g.append('path')
-        .datum(history)
-        .attr('class', 'smoothed-line')
-        .attr('d', line);
+    drawSplitLine(g, [...history, ...projections], line, xScale, innerHeight);
 
     const interval = intervalLabel();
     attachTooltip(
@@ -496,34 +508,25 @@ function drawHIndexPlot() {
         d => `<div class="title">${d.year}</div><div class="value">h-index: ${d.value}</div>`
     );
 
-    // Forecast years after the current one; the current year's projection is in the to-date tooltip
+    // Projections are open circles, including the partial current year
     attachTooltip(
         g.selectAll('.projection-point')
-            .data(projections.filter(d => d.year > currentYear))
+            .data(projections)
             .join('circle')
             .attr('class', 'projection-point')
             .attr('cx', d => xScale(d.year))
             .attr('cy', d => yScale(d.value))
             .attr('r', 4.5),
-        d => `
-            <div class="title">${d.year} forecast</div>
-            <div class="value">h-index: ${d.value} (${interval}: ${formatRange(d.lower, d.upper)})</div>
-        `
-    );
-
-    const yearEnd = projections.find(d => d.year === currentYear);
-    attachTooltip(
-        g.append('circle')
-            .datum(toDate)
-            .attr('class', 'hindex-point')
-            .attr('cx', d => xScale(d.year))
-            .attr('cy', d => yScale(d.value))
-            .attr('r', 4.5),
-        d => `
-            <div class="title">${d.year}</div>
-            <div class="value">h-index to date: ${d.value}</div>
-            ${yearEnd ? `<div class="value">Year-end projection: ${yearEnd.value} (${interval}: ${formatRange(yearEnd.lower, yearEnd.upper)})</div>` : ''}
-        `
+        d => d.year === currentYear
+            ? `
+                <div class="title">${d.year} year-end projection</div>
+                <div class="value">h-index: ${d.value} (${interval}: ${formatRange(d.lower, d.upper)})</div>
+                <div class="value">To date: ${s.h_index_to_date}</div>
+            `
+            : `
+                <div class="title">${d.year} forecast</div>
+                <div class="value">h-index: ${d.value} (${interval}: ${formatRange(d.lower, d.upper)})</div>
+            `
     );
 }
 
@@ -737,8 +740,11 @@ function drawLinePlot(paper) {
 
     g.append('path').datum(band).attr('class', 'uncertainty-area').attr('d', area);
     g.append('path').datum(fan).attr('class', 'forecast-area').attr('d', area);
-    g.append('path').datum(fan).attr('class', 'forecast-line').attr('d', line);
-    g.append('path').datum(solid).attr('class', 'smoothed-line').attr('d', line);
+    // The current year's forecast median equals its smoothed median, so join them
+    const medians = useAccumulated
+        ? [...solid, ...projections]
+        : [...observed, ...projections.filter(d => d.year > currentYear)];
+    drawSplitLine(g, medians, line, xScale, innerHeight);
 
     // Forecast medians (hover targets)
     attachTooltip(
