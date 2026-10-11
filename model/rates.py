@@ -1,7 +1,7 @@
-"""CLI for citation rate analysis using Kalman smoothing.
+"""CLI for citation rate analysis using a Poisson state-space model.
 
 Usage:
-    python -m model.rates --input results/citations.json --output results/citation_rates.json
+    python -m model.rates --input results/citations.json --output data/citation_rates.json
 """
 
 from __future__ import annotations
@@ -9,333 +9,245 @@ from __future__ import annotations
 import argparse
 import json
 import math
-from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
-from .kalman import compute_obs_variance, kalman_smoother_1d
+from .data import (
+    Series,
+    build_series,
+    compute_exposure_fraction,
+    h_index,
+    i10_index,
+    load_citations,
+    parse_scraped_at,
+    to_arrays,
+)
+from .forecast import aggregate_summary, paper_summaries, simulate
+from .kalman import ModelParams, poisson_laplace
+from .tune import DEFAULT_DRIFT_AGES, fit_hyperparameters
+
+INTERVAL = 0.8
+Z_INTERVAL = 1.2815515655446004  # standard normal quantile at 0.9
 
 
-def parse_scraped_at(scraped_at_str: str) -> datetime:
-    """Parse scraped_at timestamp to timezone-aware datetime."""
-    # Handle ISO format with timezone
-    if scraped_at_str.endswith("Z"):
-        scraped_at_str = scraped_at_str[:-1] + "+00:00"
-    return datetime.fromisoformat(scraped_at_str)
+def _round(value: Any, digits: int = 3) -> Any:
+    """Round floats in nested lists/dicts to keep the output JSON compact."""
+    if isinstance(value, float):
+        return round(value, digits) if math.isfinite(value) else None
+    if isinstance(value, (np.floating, np.integer)):
+        return _round(value.item(), digits)
+    if isinstance(value, dict):
+        return {k: _round(v, digits) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_round(v, digits) for v in value]
+    return value
 
 
-def compute_exposure_fraction(scraped_at: datetime) -> float:
-    """Compute fraction of current year that has been observed.
-
-    Returns:
-        Fraction between 0 and 1 representing how much of the year has passed.
-    """
-    current_year = scraped_at.year
-    tz = scraped_at.tzinfo or timezone.utc
-
-    year_start = datetime(current_year, 1, 1, tzinfo=tz)
-    next_year_start = datetime(current_year + 1, 1, 1, tzinfo=tz)
-
-    total_seconds = (next_year_start - year_start).total_seconds()
-    elapsed_seconds = (scraped_at - year_start).total_seconds()
-
-    fraction = elapsed_seconds / total_seconds
-
-    # Sanity check
-    if not (0.0 < fraction <= 1.0):
-        return 1.0
-
-    return fraction
-
-
-def analyze_paper(
-    paper: dict[str, Any],
-    scraped_at: datetime,
-    process_var: float,
-    min_count: float,
-    obs_var: Optional[float] = None,
-    obs_overdispersion: Optional[float] = None,
-    forecast_years: int = 0,
+def summarize_history(
+    papers: list[dict[str, Any]],
+    series_by_index: dict[int, Series],
+    current_year: int,
 ) -> dict[str, Any]:
-    """Analyze a single paper's citation time series.
+    """Compute observed h-index, i10-index and totals by year.
 
-    Args:
-        paper: Paper dict with title and citations_by_year.
-        scraped_at: When the data was scraped.
-        process_var: Process variance for Kalman filter.
-        min_count: Pseudocount to add before log transform.
-        obs_var: Constant observation variance (if not using overdispersion).
-        obs_overdispersion: Overdispersion factor φ for time-varying variance.
-        forecast_years: Number of years to forecast into the future.
-
-    Returns:
-        Dict with years, observed counts, empirical rates, smoothed rates, and forecasts.
+    Historical values use dated citations only. The "to date" values use
+    Scholar's total citations (including undated ones) so they match the
+    profile page.
     """
-    citations = paper.get("citations_by_year", {})
+    modeled = list(series_by_index.values())
+    first_year = min(s.years[0] for s in modeled)
+    years = list(range(first_year, current_year + 1))
 
-    # Handle empty citations
-    if not citations:
-        return {
-            "title": paper["title"],
-            "years": [],
-            "observed_citations": [],
-            "exposure_fraction": [],
-            "empirical_rate": [],
-            "smoothed_rate": [],
-            "smoothed_log_rate": [],
-            "smoothed_rate_std": [],
-        }
+    # Cumulative dated citations per paper per year
+    cumulative = np.zeros((len(modeled), len(years)))
+    for i, s in enumerate(modeled):
+        offset = s.years[0] - first_year
+        cumulative[i, offset:] = np.cumsum(s.counts)
+    yearly = np.diff(cumulative.sum(axis=0), prepend=0.0)
 
-    # Build year grid from available data
-    years = sorted(int(y) for y in citations.keys())
-    current_year = scraped_at.year
-
-    # Get counts for each year (0 if missing within range)
-    counts = np.array([citations.get(str(y), 0) for y in years], dtype=float)
-
-    # Build exposure array
-    exposure = np.ones_like(counts)
-    if years[-1] == current_year:
-        exposure[-1] = compute_exposure_fraction(scraped_at)
-
-    # Empirical rates (annualized)
-    empirical = counts / np.maximum(exposure, 1e-6)
-
-    # Transform to log space with pseudocount
-    z = np.log(empirical + min_count)
-
-    # Determine observation variance
-    if obs_overdispersion is not None:
-        # Time-varying variance based on Poisson approximation
-        R_t = compute_obs_variance(empirical, obs_overdispersion, min_count, exposure=exposure)
-    else:
-        # Constant variance
-        R_t = obs_var if obs_var is not None else 0.3
-
-    # Run Kalman smoother
-    x_smooth, P_smooth = kalman_smoother_1d(
-        z,
-        process_var=process_var,
-        obs_var=R_t,
-        x0_mean=z[0],
-        x0_var=1.0,
-    )
-
-    # Back-transform to rate space (subtract pseudocount added before log transform)
-    smoothed_rate = np.maximum(0, np.exp(x_smooth) - min_count)
-    smoothed_std = np.exp(x_smooth) * np.sqrt(P_smooth)
-
-    result = {
-        "title": paper["title"],
-        "years": years,
-        "observed_citations": counts.tolist(),
-        "exposure_fraction": exposure.tolist(),
-        "empirical_rate": empirical.tolist(),
-        "smoothed_rate": smoothed_rate.tolist(),
-        "smoothed_log_rate": x_smooth.tolist(),
-        "smoothed_rate_std": smoothed_std.tolist(),
-    }
-
-    # Add forecasts if requested
-    if forecast_years > 0:
-        last_year = years[-1]
-        forecast_years_list = [last_year + h for h in range(1, forecast_years + 1)]
-
-        # Get final smoothed state
-        x_T = x_smooth[-1]
-        P_T = P_smooth[-1]
-
-        # Compute forecasts for each horizon
-        f_log_var = []
-        f_rate_median = []
-        f_rate_std = []
-        f_sampled_log_rate = []
-        f_sampled_rate = []
-
-        # For observation noise sampling
-        sigma_min = 0.1
-        phi = obs_overdispersion if obs_overdispersion is not None else 0.56
-
-        for h in range(1, forecast_years + 1):
-            # Forecast variance grows linearly with horizon
-            var_h = P_T + h * process_var
-            mean_h = x_T  # Mean stays constant (random walk has no drift)
-
-            f_log_var.append(float(var_h))
-
-            # Transform to rate space (lognormal distribution)
-            median_lambda = max(0, math.exp(mean_h) - min_count)
-            var_lambda = (math.exp(var_h) - 1.0) * math.exp(2 * mean_h + var_h)
-            std_lambda = math.sqrt(var_lambda)
-
-            f_rate_median.append(median_lambda)
-            f_rate_std.append(std_lambda)
-
-            # Sample state (log-rate) from forecast distribution
-            log_rate_sample = np.random.normal(mean_h, math.sqrt(var_h))
-
-            # Compute observation variance (same formula as compute_obs_variance)
-            rate_sample = math.exp(log_rate_sample)
-            R_h = phi / (rate_sample + min_count) + sigma_min**2
-
-            # Sample observed log-rate with observation noise
-            sampled_log_rate = np.random.normal(log_rate_sample, math.sqrt(R_h))
-            sampled_rate = max(0, math.exp(sampled_log_rate) - min_count)
-
-            f_sampled_log_rate.append(float(sampled_log_rate))
-            f_sampled_rate.append(float(sampled_rate))
-
-        result.update({
-            "forecast_years": forecast_years_list,
-            "forecast_log_rate_var": f_log_var,
-            "forecast_rate_median": f_rate_median,
-            "forecast_rate_std": f_rate_std,
-            "forecast_sampled_log_rate": f_sampled_log_rate,
-            "forecast_sampled_rate": f_sampled_rate,
-        })
-
-    return result
-
-
-def check_citation_totals(paper: dict[str, Any], analyzed: dict[str, Any]) -> None:
-    """Warn if observed citations don't match total_citations."""
-    total_from_years = sum(analyzed["observed_citations"])
-    expected_total = paper.get("total_citations", 0)
-
-    if abs(total_from_years - expected_total) > 0.5:
-        print(
-            f"  Warning: {paper['title'][:50]}... "
-            f"sum={total_from_years}, total_citations={expected_total}"
+    totals_to_date = np.array([
+        max(
+            paper.get("total_citations") or 0,
+            series_by_index[i].dated_citations if i in series_by_index else 0,
         )
+        for i, paper in enumerate(papers)
+    ])
+
+    return {
+        "years": years,
+        "h_index": h_index(cumulative.T).tolist(),
+        "i10_index": i10_index(cumulative.T).tolist(),
+        "citations": yearly.tolist(),
+        "cumulative": cumulative.sum(axis=0).tolist(),
+        "citations_to_date": int(totals_to_date.sum()),
+        "h_index_to_date": int(h_index(totals_to_date)),
+        "i10_index_to_date": int(i10_index(totals_to_date)),
+    }
 
 
 def main() -> None:
     """Run citation rate analysis."""
     parser = argparse.ArgumentParser(
-        description="Analyze citation rates using Kalman smoothing"
+        description="Analyze citation rates using a Poisson state-space model"
     )
     parser.add_argument(
         "--input",
         "-i",
-        required=True,
-        help="Path to citations.json",
+        default="results/citations.json",
+        help="Path to citations.json (default: results/citations.json)",
     )
     parser.add_argument(
         "--output",
         "-o",
-        required=True,
-        help="Path for output JSON",
+        default="data/citation_rates.json",
+        help="Path for output JSON (default: data/citation_rates.json)",
     )
     parser.add_argument(
-        "--model",
-        choices=["kalman"],
-        default="kalman",
-        help="Smoothing model (default: kalman)",
-    )
-    parser.add_argument(
-        "--process-var",
-        type=float,
-        default=0.25,
-        help="Process variance on log-rate random walk (default: 0.25)",
-    )
-    parser.add_argument(
-        "--obs-var",
-        type=float,
+        "--params",
         default=None,
-        help="Constant observation noise variance on log counts",
+        help="JSON from model.tune with fixed hyperparameters (default: fit to the data)",
     )
     parser.add_argument(
-        "--obs-overdispersion",
-        type=float,
-        default=0.56,
-        help="Overdispersion factor φ for time-varying observation variance (default: 0.56)",
-    )
-    parser.add_argument(
-        "--min-count",
-        type=float,
-        default=0.5,
-        help="Pseudocount added before log transform (default: 0.5)",
+        "--drift-ages",
+        type=int,
+        default=DEFAULT_DRIFT_AGES,
+        help=f"Number of age-specific drift parameters when fitting (default: {DEFAULT_DRIFT_AGES})",
     )
     parser.add_argument(
         "--forecast-years",
         type=int,
-        default=0,
-        help="Number of years to forecast into the future (default: 0)",
+        default=3,
+        help="Number of years to forecast after the current year (default: 3)",
     )
-
+    parser.add_argument(
+        "--samples",
+        type=int,
+        default=2000,
+        help="Number of Monte Carlo draws for forecasts (default: 2000)",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=0,
+        help="Random seed for forecasts (default: 0)",
+    )
     args = parser.parse_args()
 
-    # If obs-var is explicitly set, disable overdispersion
-    if args.obs_var is not None:
-        args.obs_overdispersion = None
-
-    # Load input
     print(f"Loading {args.input}...")
-    with open(args.input) as f:
-        data = json.load(f)
-
-    # Parse scraped_at
+    data = load_citations(args.input)
     scraped_at = parse_scraped_at(data["scraped_at"])
-    print(f"Data scraped at: {scraped_at}")
-    print(f"Exposure fraction for {scraped_at.year}: {compute_exposure_fraction(scraped_at):.3f}")
+    current_year = scraped_at.year
+    exposure = compute_exposure_fraction(scraped_at)
+    print(f"Data scraped at: {scraped_at} ({exposure:.1%} of {current_year} observed)")
 
-    # Analyze each paper
     papers = data.get("papers", [])
-    print(f"Analyzing {len(papers)} papers...")
-    if args.forecast_years > 0:
-        print(f"Forecasting {args.forecast_years} years into the future...")
+    n_unscraped = sum(1 for p in papers if p.get("citations_by_year") is None)
+    if n_unscraped:
+        print(f"  Warning: {n_unscraped} papers haven't been scraped yet (resume with "
+              f"`python -m ingest`); they're left out of rates and h-index")
+    series_by_index = {}
+    unmodeled_totals = []
+    for i, paper in enumerate(papers):
+        s = build_series(paper, scraped_at)
+        if s is None:
+            unmodeled_totals.append(paper.get("total_citations") or 0)
+        else:
+            series_by_index[i] = s
+    indices = list(series_by_index)
+    series = [series_by_index[i] for i in indices]
+    print(f"Modeling {len(series)} of {len(papers)} papers "
+          f"({len(papers) - len(series) - n_unscraped} have no dated citations or publication year)")
 
-    analyzed_papers = []
-    for paper in papers:
-        analyzed = analyze_paper(
-            paper,
-            scraped_at,
-            process_var=args.process_var,
-            min_count=args.min_count,
-            obs_var=args.obs_var,
-            obs_overdispersion=args.obs_overdispersion,
-            forecast_years=args.forecast_years,
-        )
-        check_citation_totals(paper, analyzed)
-        analyzed_papers.append(analyzed)
+    Y, E, mask, trunc = to_arrays(series)
+    n_zero = int((Y[mask] == 0).sum())
+    print(f"  {int(mask.sum())} paper-years, including {n_zero} zero years")
 
-    # Build model metadata
-    model_info = {
-        "type": args.model,
-        "process_var": args.process_var,
-        "min_count": args.min_count,
-    }
-    if args.obs_overdispersion is not None:
-        model_info["obs_overdispersion"] = args.obs_overdispersion
+    undated = sum(s.undated_citations for s in series)
+    if undated:
+        print(f"  {undated} citations ({undated / max(1, undated + Y.sum()):.1%}) "
+              f"have no year on Scholar; they count toward h-index but not rates")
+
+    if args.params:
+        with open(args.params) as f:
+            tuned = json.load(f)
+        params = ModelParams.from_dict(tuned.get("params", tuned))
+        print(f"Using hyperparameters from {args.params}")
     else:
-        model_info["obs_var"] = args.obs_var
+        print(f"Fitting hyperparameters (K={args.drift_ages})...")
+        params, _ = fit_hyperparameters(Y, E, mask, trunc, args.drift_ages)
+    print(f"  q={params.process_var:.4f} m0={params.init_mean:.4f} "
+          f"v0={params.init_var:.4f} drift={[round(d, 4) for d in params.drift]}")
 
-    # Build output
+    laplace = poisson_laplace(Y, E, mask, trunc, params)
+    loglik = float(laplace.loglik.sum())
+    print(f"  log-likelihood: {loglik:.2f} ({laplace.n_iter} Newton iterations)")
+
+    print(f"Forecasting {args.forecast_years} years with {args.samples} draws...")
+    forecast = simulate(
+        series,
+        laplace,
+        params,
+        current_year,
+        horizon=args.forecast_years,
+        n_samples=args.samples,
+        seed=args.seed,
+        extra_totals=unmodeled_totals,
+    )
+    paper_forecasts = paper_summaries(forecast)
+    aggregate = aggregate_summary(forecast)
+
+    analyzed = []
+    for row, (index, s) in enumerate(zip(indices, series)):
+        n = len(s.years)
+        x = laplace.x[row, :n]
+        sd = np.sqrt(laplace.P[row, :n])
+        analyzed.append({
+            "title": s.title,
+            "pub_year": s.pub_year,
+            "total_citations": s.total_citations,
+            "years": s.years,
+            "observed_citations": s.counts.astype(int).tolist(),
+            "exposure_fraction": s.exposure.tolist(),
+            "empirical_rate": (s.counts / s.exposure).tolist(),
+            "smoothed_rate": np.exp(x).tolist(),
+            "smoothed_rate_mean": np.exp(x + sd**2 / 2).tolist(),
+            "smoothed_rate_lower": np.exp(x - Z_INTERVAL * sd).tolist(),
+            "smoothed_rate_upper": np.exp(x + Z_INTERVAL * sd).tolist(),
+            "forecast": paper_forecasts[row],
+        })
+
+    summary = summarize_history(papers, series_by_index, current_year)
+    print(f"h-index: {summary['h_index_to_date']} to date; "
+          f"{current_year} year-end projection {aggregate['h_index_q50'][0]:.0f} "
+          f"(80%: {aggregate['h_index_q10'][0]:.0f}-{aggregate['h_index_q90'][0]:.0f})")
+    profile = data.get("profile") or {}
+    for key in ("h_index", "i10_index"):
+        if profile.get(key) is not None and profile[key] != summary[f"{key}_to_date"]:
+            print(f"  Note: Scholar profile reports {key} {profile[key]}, "
+                  f"computed {summary[f'{key}_to_date']} from per-paper counts")
+
     result = {
         "user_id": data.get("user_id"),
         "scraped_at": data.get("scraped_at"),
-        "model": model_info,
-        "papers": analyzed_papers,
+        "current_year": current_year,
+        "exposure_fraction_current": exposure,
+        "model": {
+            "type": "poisson_state_space",
+            **params.to_dict(),
+            "drift_ages": len(params.drift),
+            "log_likelihood": loglik,
+            "interval": INTERVAL,
+        },
+        "profile": data.get("profile"),
+        "summary": summary,
+        "forecast": {"years": forecast.years, **aggregate},
+        "papers": analyzed,
     }
 
-    # Add forecast metadata if forecasting was requested
-    if args.forecast_years > 0:
-        result["forecast"] = {
-            "horizon_years": args.forecast_years,
-            "assumptions": {
-                "model": "random_walk_log_rate",
-                "process_var": args.process_var,
-                "obs_overdispersion": args.obs_overdispersion,
-                "min_count": args.min_count,
-            }
-        }
-
-    # Write output
     print(f"Writing {args.output}...")
     with open(args.output, "w") as f:
-        json.dump(result, f, indent=2)
-
+        json.dump(_round(result), f, indent=1)
     print("Done!")
 
 
