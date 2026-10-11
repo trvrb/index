@@ -106,6 +106,39 @@ header h1 a:hover {
     margin-bottom: 24px;
 }
 
+/* Summary stats */
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat {
+    background: white;
+    border-radius: 8px;
+    padding: 14px 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.stat-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #222;
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.stat-note {
+    font-size: 0.8rem;
+    color: #888;
+    margin-top: 2px;
+}
+
 section {
     background: white;
     border-radius: 8px;
@@ -207,22 +240,39 @@ section h2 {
     stroke-dasharray: 5, 5;
 }
 
-.demarcation-line {
-    stroke: #888;
-    stroke-width: 1;
-    stroke-dasharray: 4, 4;
-}
-
-.empirical-point {
+.observed-point {
     fill: #e74c3c;
     stroke: white;
     stroke-width: 1.5;
 }
 
-.forecast-sample-point {
+/* Partial current year: observed so far, annualized in yearly mode */
+.partial-point {
     fill: white;
     stroke: #e74c3c;
     stroke-width: 1.5;
+}
+
+.hindex-point {
+    fill: #4a90d9;
+    stroke: white;
+    stroke-width: 1.5;
+}
+
+.projection-point {
+    fill: white;
+    stroke: #4a90d9;
+    stroke-width: 1.5;
+}
+
+/* Region holding the partial current year and forecasts */
+.projected-region {
+    fill: #f3f4f6;
+}
+
+.projected-label {
+    font-size: 11px;
+    fill: #999;
 }
 
 .stream-layer {
@@ -262,6 +312,10 @@ section h2 {
     pointer-events: none;
 }
 
+.treemap-value {
+    opacity: 0.85;
+}
+
 /* Legend */
 .legend {
     display: flex;
@@ -283,11 +337,34 @@ section h2 {
     border-radius: 3px;
 }
 
-.legend-color.empirical {
+.legend-color.observed {
     background: #e74c3c;
     border-radius: 50%;
     width: 10px;
     height: 10px;
+}
+
+.legend-color.partial {
+    border: 1.5px solid #e74c3c;
+    border-radius: 50%;
+    width: 10px;
+    height: 10px;
+}
+
+.legend-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+}
+
+#stream-legend {
+    gap: 6px 14px;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+}
+
+#stream-legend .legend-item {
+    gap: 4px;
 }
 
 .legend-color.smoothed {
