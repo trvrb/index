@@ -146,6 +146,11 @@ def main() -> None:
     if n_unscraped:
         print(f"  Warning: {n_unscraped} papers haven't been scraped yet (resume with "
               f"`python -m ingest`); they're left out of rates and h-index")
+    stale = [p for p in papers if p.get("stale") and p.get("citations_by_year") is not None]
+    if stale:
+        oldest = min(p.get("scraped_at") or data["scraped_at"] for p in stale)
+        print(f"  Warning: {len(stale)} papers have newer counts on Scholar than stored "
+              f"(oldest from {oldest[:10]}); run `python -m ingest` to update")
     series_by_index = {}
     unmodeled_totals = []
     for i, paper in enumerate(papers):

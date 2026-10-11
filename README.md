@@ -30,13 +30,20 @@ request_delay: 2
 Run the scraper:
 
 ```bash
-python -m ingest            # fetch the paper list, scrape papers not yet scraped
-python -m ingest --refresh  # re-scrape citation counts for every paper
+python -m ingest            # update papers whose citation counts changed
+python -m ingest --refresh  # re-fetch every paper
 ```
 
 Output: `results/citations.json` with each paper's publication year, total citations and citations per year, plus the profile's summary stats.
 
-The scraper always re-fetches the paper list, matching papers by Scholar ID. Existing counts are kept and new papers are queued. Progress is saved after every paper, so if Scholar rate-limits you, re-run without `--refresh` to resume.
+Scholar rate-limits after about 100 requests, so the scraper avoids requests it doesn't need:
+
+- **Every run fetches the paper list** (about 9 requests). The list shows each paper's "Cited by" count.
+- **Detail pages are fetched only when needed:** for new papers and papers whose count changed. Unchanged papers are marked current as of now. Uncited papers need no request.
+- **Order:** changed papers are fetched largest change first.
+- **Interruptions:** if Scholar rate-limits you, progress is saved and existing data is kept. Re-run `python -m ingest` to continue.
+- **`--refresh`:** Scholar occasionally moves a citation between years without changing a paper's total, which change detection can't see. `--refresh` re-fetches every paper and is resumable the same way. The scraper suggests running it when papers haven't been fetched in 180 days.
+- **Model warnings:** `python -m model.rates` warns when stored counts are behind Scholar's.
 
 **Note:** The scraper uses browser cookies for authentication. You must be logged into Google in Chrome, Firefox, or Safari.
 
@@ -120,8 +127,10 @@ Raw scraped data:
       "title": "Paper Title",
       "citation_id": "RIi-1pAAAAAJ:HoB7MX3m0LUC",
       "pub_year": 2018,
-      "total_citations": 100,
+      "total_citations": 77,
+      "listed_citations": 77,
       "citations_by_year": { "2018": 10, "2019": 25, "2021": 42 },
+      "fetched_at": "2026-09-02T18:10:44+00:00",
       "scraped_at": "2026-10-11T05:43:05+00:00"
     }
   ]
@@ -129,6 +138,11 @@ Raw scraped data:
 ```
 
 Scholar omits years with zero citations from `citations_by_year`; the model treats them as zeros.
+
+- `listed_citations` is the paper's count on the profile list when its detail page was last fetched.
+- `fetched_at` is when the detail page was last fetched.
+- `scraped_at` is when the counts were last confirmed current. Exposure for the current year is computed from it.
+- Papers with a change on Scholar that hasn't been fetched yet carry `"stale": true`.
 
 ### citation_rates.json
 

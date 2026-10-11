@@ -107,6 +107,20 @@ def parse_year(text: str) -> Optional[int]:
     return int(match.group(1)) if match else None
 
 
+def parse_list_citations(row) -> Optional[int]:
+    """Parse a profile list row's "Cited by" count.
+
+    Returns 0 when the cell is blank (uncited) and None when it's missing.
+    """
+    elem = row.select_one("td.gsc_a_c a.gsc_a_ac")
+    if elem is None:
+        return None
+    text = elem.get_text(strip=True)
+    if text == "":
+        return 0
+    return int(text) if text.isdigit() else None
+
+
 def parse_profile_stats(soup: BeautifulSoup) -> Optional[dict]:
     """Parse the citations / h-index / i10-index table on a profile page."""
     cells = [td.get_text(strip=True) for td in soup.select("#gsc_rsb_st td.gsc_rsb_std")]
@@ -135,8 +149,9 @@ def fetch_paper_list(user_id: str, delay: float = 5) -> tuple[list[dict], Option
 
     Returns:
         Tuple of (papers, profile). Papers are dicts with 'title',
-        'citation_id' and 'pub_year'; profile holds the summary citation
-        stats from the first page (or None if not found).
+        'citation_id', 'pub_year' and 'citations' (the listed "Cited by"
+        count); profile holds the summary citation stats from the first
+        page (or None if not found).
     """
     papers = []
     profile = None
@@ -169,6 +184,7 @@ def fetch_paper_list(user_id: str, delay: float = 5) -> tuple[list[dict], Option
                         "title": title,
                         "citation_id": match.group(1),
                         "pub_year": parse_year(year_elem.get_text(strip=True)) if year_elem else None,
+                        "citations": parse_list_citations(row),
                     })
 
         # Check if there are more pages
