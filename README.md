@@ -7,7 +7,7 @@ A tool for tracking and visualizing Google Scholar citation data over time.
 This project has three components:
 
 1. **Ingest** (`ingest/`) - Scrapes citation data from Google Scholar
-2. **Model** (`model/`) - Smooths citation rates using a Kalman filter
+2. **Model** (`model/`) - Estimates citation rates and forecasts with a Poisson state-space model
 3. **Visualization** (root) - D3.js interactive charts, deployed via GitHub Pages
 
 ## Installation
@@ -24,49 +24,40 @@ Configure your Google Scholar user ID in `config.yaml`:
 
 ```yaml
 user_id: RIi-1pAAAAAJ
-request_delay: 5
+request_delay: 2
 ```
 
 Run the scraper:
 
 ```bash
-python -m ingest
+python -m ingest            # fetch the paper list, scrape papers not yet scraped
+python -m ingest --refresh  # re-scrape citation counts for every paper
 ```
 
-Output: `results/citations.json` with raw citation counts per paper per year.
+Output: `results/citations.json` with each paper's publication year, total citations and citations per year, plus the profile's summary stats.
+
+The scraper always re-fetches the paper list, matching papers by Scholar ID. Existing counts are kept and new papers are queued. Progress is saved after every paper, so if Scholar rate-limits you, re-run without `--refresh` to resume.
 
 **Note:** The scraper uses browser cookies for authentication. You must be logged into Google in Chrome, Firefox, or Safari.
 
-### 2. Tune Kalman filter hyperparameters (optional)
-
-Find optimal smoothing parameters for your data:
+### 2. Estimate citation rates and forecasts
 
 ```bash
-python -m model.tune \
-  --input results/citations.json \
-  --output results/tuned_hyperparams.json \
-  --n-grid 50
+python -m model.rates
 ```
 
-This performs a grid search over process variance and overdispersion, maximizing marginal likelihood across all papers.
+This reads `results/citations.json`, fits the model hyperparameters by maximum marginal likelihood (a few seconds), and writes `data/citation_rates.json`, which the visualization reads. Options:
 
-### 3. Produce smoothed citation rates
+- `--forecast-years N`: years to forecast after the current year (default 3)
+- `--params FILE`: use fixed hyperparameters from `model.tune` instead of fitting
+- `--drift-ages K`: number of age-specific drift parameters (default 3)
 
-```bash
-python -m model.rates \
-  --input results/citations.json \
-  --output results/citation_rates.json \
-  --forecast-years 0
-```
-
-Output: `results/citation_rates.json` with observed counts, empirical rates, and Kalman-smoothed rates with uncertainty.
-
-Default parameters (`--process-var 0.25 --obs-overdispersion 0.56`) were tuned from empirical data.
-
-To update the GitHub Pages visualization, copy the output to the versioned data directory:
+### 3. Diagnostics (optional)
 
 ```bash
-cp results/citation_rates.json data/citation_rates.json
+python -m model.tune       # fit and save hyperparameters to results/tuned_params.json
+python -m model.backtest   # rolling-origin backtest of forecast accuracy
+pytest                     # unit tests
 ```
 
 ### 4. View the visualization
@@ -82,11 +73,14 @@ python -m http.server 8000
 Then open http://localhost:8000 in your browser.
 
 The visualization includes:
-- **H-index over time**: Tracks how the h-index evolves across years
-- **All paper citations over time**: Stacked area chart showing all papers' smoothed citation rates, colored by publication year
-- **Specific paper citations over time**: Per-paper view with empirical citations, smoothed rate, and uncertainty bands
 
-Click on any paper in the streamplot to view its details in the line plot.
+- **Summary stats**: Total citations, h-index, i10-index, and citations this year with a year-end projection
+- **H-index over time**: The observed h-index by year, with a forecast fan
+- **All paper citations over time**: Stacked area chart of every paper's smoothed citation rate, colored by publication year
+- **All paper citations at a specific year**: Treemap of each paper's share of citations
+- **Specific paper citations over time**: One paper's observed citations, smoothed rate with an 80% interval, and forecast
+
+The Yearly/Accumulated toggle switches between citations per year and cumulative citations. Click any paper in the stacked chart or treemap to view it in the per-paper plot. The shaded region marks the partial current year and later years, which are projections.
 
 ## Project Structure
 
@@ -96,10 +90,18 @@ index/
 ├── app.js              # D3.js visualization code
 ├── styles.css          # Styling
 ├── data/
-│   └── citation_rates.json  # Versioned data for GitHub Pages
+│   └── citation_rates.json  # Model output for GitHub Pages
 ├── results/            # Local working outputs (gitignored)
 ├── ingest/             # Google Scholar scraper
-└── model/              # Kalman filter smoothing
+├── model/
+│   ├── data.py         # Zero-filled yearly series and exposure
+│   ├── kalman.py       # Batched Kalman smoother and Poisson Laplace approximation
+│   ├── tune.py         # Hyperparameter fitting
+│   ├── forecast.py     # Monte Carlo forecasts of citations and h-index
+│   ├── backtest.py     # Rolling-origin forecast evaluation
+│   └── rates.py        # CLI producing data/citation_rates.json
+├── notes/              # Design notes (model.md describes the current model)
+└── tests/
 ```
 
 ## Data Formats
@@ -111,75 +113,77 @@ Raw scraped data:
 ```json
 {
   "user_id": "RIi-1pAAAAAJ",
-  "scraped_at": "2025-12-25T12:00:00+00:00",
+  "scraped_at": "2026-10-11T05:43:05+00:00",
+  "profile": { "citations": 24945, "h_index": 66, "i10_index": 135 },
   "papers": [
     {
       "title": "Paper Title",
+      "citation_id": "RIi-1pAAAAAJ:HoB7MX3m0LUC",
+      "pub_year": 2018,
       "total_citations": 100,
-      "citations_by_year": { "2020": 10, "2021": 25, "2022": 42 }
+      "citations_by_year": { "2018": 10, "2019": 25, "2021": 42 },
+      "scraped_at": "2026-10-11T05:43:05+00:00"
     }
   ]
 }
 ```
+
+Scholar omits years with zero citations from `citations_by_year`; the model treats them as zeros.
 
 ### citation_rates.json
 
-Smoothed rates:
+Model output (abbreviated):
 
 ```json
 {
-  "user_id": "RIi-1pAAAAAJ",
-  "model": { "type": "kalman", "process_var": 0.25, "obs_overdispersion": 0.56 },
+  "current_year": 2026,
+  "exposure_fraction_current": 0.776,
+  "model": { "type": "poisson_state_space", "process_var": 0.158, "init_mean": 1.15,
+             "init_var": 1.38, "drift": [0.98, 0.08, -0.09], "interval": 0.8 },
+  "summary": { "years": [...], "h_index": [...], "citations": [...],
+               "h_index_to_date": 66, "i10_index_to_date": 135, "citations_to_date": 24936 },
+  "forecast": { "years": [2026, 2027, 2028, 2029],
+                "h_index_q10": [...], "h_index_q50": [...], "h_index_q90": [...],
+                "citations_q50": [...], "cumulative_q50": [...] },
   "papers": [
     {
       "title": "Paper Title",
-      "years": [2020, 2021, 2022],
-      "observed_citations": [10, 25, 42],
-      "empirical_rate": [10.0, 25.0, 42.0],
-      "smoothed_rate": [12.3, 23.1, 38.5],
-      "smoothed_rate_std": [3.2, 4.1, 5.0]
+      "pub_year": 2018,
+      "total_citations": 100,
+      "years": [2018, 2019, 2020, 2021],
+      "observed_citations": [10, 25, 0, 42],
+      "exposure_fraction": [1.0, 1.0, 1.0, 1.0],
+      "empirical_rate": [10.0, 25.0, 0.0, 42.0],
+      "smoothed_rate": [11.2, 20.5, 22.3, 35.0],
+      "smoothed_rate_mean": [12.0, 21.4, 23.6, 36.8],
+      "smoothed_rate_lower": [7.1, 14.8, 15.2, 26.0],
+      "smoothed_rate_upper": [17.6, 28.4, 32.7, 47.1],
+      "forecast": { "rate_mean": [...], "rate_q10": [...], "rate_q50": [...], "rate_q90": [...],
+                    "cumulative_q10": [...], "cumulative_q50": [...], "cumulative_q90": [...] }
     }
   ]
 }
 ```
 
-## Kalman Filter Model
+- `smoothed_rate` is the posterior median rate.
+- `smoothed_rate_mean` is the posterior mean, used when stacking papers.
+- `smoothed_rate_lower` and `smoothed_rate_upper` bound the 80% interval.
+- Forecast arrays line up with `forecast.years`. The first entry is the year-end projection for the partial current year.
+- Summary and forecast h-index values count undated citations, so they match Scholar's profile. Historical values use dated citations only.
 
-The smoothing model treats each paper's citation history as a noisy observation of an underlying citation rate that evolves over time.
+## Model
 
-### State-space formulation
-
-We model the **log citation rate** as a random walk:
-
-```
-x_t = x_{t-1} + ε_t,  where ε_t ~ N(0, q)
-```
-
-The observed log-counts are noisy measurements of this latent rate:
+Each paper's log citation rate follows a random walk whose mean step depends on the paper's age. Yearly counts are Poisson, scaled by the fraction of the year observed:
 
 ```
-z_t = x_t + η_t,  where η_t ~ N(0, R_t)
+x_0 ~ N(m0, v0)
+x_a = x_{a-1} + δ_{min(a,K)} + ε,   ε ~ N(0, q)
+y_a ~ Poisson(e_a · exp(x_a))
 ```
 
-### Time-varying observation variance
+- **Inference:** the Laplace approximation. Its Newton iterations are Kalman filter and RTS smoother passes on Gaussian working observations.
+- **Hyperparameters:** `q`, `m0`, `v0` and `δ` are shared across papers and fit by maximizing the approximate marginal likelihood.
+- **Drift:** with K=3, a typical paper's rate rises about 2.7× into its second year, holds steady, then declines about 9% per year.
+- **Forecasts:** these simulate all papers jointly, which gives intervals for total citations and h-index.
 
-Rather than assuming constant observation noise, we use a Poisson-inspired model where high-count years are measured more precisely:
-
-```
-R_t = φ / (rate_t + 0.5) + σ²_min
-```
-
-Here φ is an overdispersion factor (φ > 1 indicates more variance than pure Poisson).
-
-### Smoothing
-
-We apply the standard Kalman filter (forward pass) followed by the Rauch-Tung-Striebel smoother (backward pass) to obtain smoothed estimates of the log-rate at each year. Exponentiating gives the smoothed citation rate.
-
-### Hyperparameter tuning
-
-The two key parameters are:
-
-- **Process variance (q)**: Controls how much the underlying rate can change year-to-year. Higher values allow more volatility.
-- **Overdispersion (φ)**: Scales the observation noise. Higher values down-weight the observations relative to the prior.
-
-These are tuned by maximizing the marginal likelihood p(observations | q, φ) summed across all papers.
+See `notes/model.md` for details, the model comparison, and backtest results.

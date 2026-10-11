@@ -3,39 +3,20 @@
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 
 from .scholar import Paper
 
 
-def save_citations(papers: list[Paper], user_id: str, output_path: str = "results/citations.json") -> None:
-    """Save citation data to JSON file.
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
-    Args:
-        papers: List of Paper objects with citation data.
-        user_id: Google Scholar user ID.
-        output_path: Path to output JSON file.
-    """
-    data = {
-        "user_id": user_id,
-        "scraped_at": datetime.now(timezone.utc).isoformat(),
-        "papers": [
-            {
-                "title": paper.title,
-                "total_citations": paper.total_citations,
-                "citations_by_year": paper.citations_by_year,
-            }
-            for paper in papers
-        ],
-    }
 
-    # Ensure output directory exists
-    output = Path(output_path)
+def _write(data: dict, path: str) -> None:
+    output = Path(path)
     output.parent.mkdir(parents=True, exist_ok=True)
-
     with open(output, "w") as f:
         json.dump(data, f, indent=2)
-
-    print(f"Saved citation data to {output_path}")
 
 
 def load_progress(path: str) -> dict | None:
@@ -51,37 +32,72 @@ def load_progress(path: str) -> dict | None:
         return json.load(f)
 
 
-def init_progress(papers_metadata: list[dict], user_id: str, path: str) -> dict:
-    """Create initial progress file with all papers having null citation data.
+def reset_citations(data: dict) -> None:
+    """Mark every paper as unscraped so its citations are fetched again."""
+    for paper in data.get("papers", []):
+        paper["total_citations"] = None
+        paper["citations_by_year"] = None
+        paper.pop("scraped_at", None)
+
+
+def merge_paper_list(
+    data: Optional[dict],
+    paper_list: list[dict],
+    profile: Optional[dict],
+    user_id: str,
+    path: str,
+) -> dict:
+    """Merge a freshly fetched paper list into the progress file.
+
+    Papers are matched by citation_id. Existing citation data is kept, new
+    papers are added unscraped, and papers no longer on the profile are
+    dropped. Titles and publication years come from the fresh list.
 
     Args:
-        papers_metadata: List of dicts with 'title' and 'citation_id'.
+        data: Existing progress dict, or None to start fresh.
+        paper_list: Dicts with 'title', 'citation_id' and 'pub_year'.
+        profile: Profile summary stats, if parsed.
         user_id: Google Scholar user ID.
         path: Output file path.
 
     Returns:
-        The progress dict that was written.
+        The merged progress dict that was written.
     """
-    data = {
+    data = data or {}
+    previous_scraped_at = data.get("scraped_at")
+    existing = {p.get("citation_id"): p for p in data.get("papers", [])}
+
+    papers = []
+    for entry in paper_list:
+        paper = existing.get(entry["citation_id"], {})
+        merged = {
+            "title": entry["title"],
+            "citation_id": entry["citation_id"],
+            "pub_year": entry.get("pub_year") or paper.get("pub_year"),
+            "total_citations": paper.get("total_citations"),
+            "citations_by_year": paper.get("citations_by_year"),
+        }
+        # Kept counts were observed at the previous scrape time
+        if merged["citations_by_year"] is not None:
+            merged["scraped_at"] = paper.get("scraped_at") or previous_scraped_at
+        papers.append(merged)
+
+    n_new = sum(1 for e in paper_list if e["citation_id"] not in existing)
+    n_dropped = len(set(existing) - {e["citation_id"] for e in paper_list})
+    if existing:
+        print(f"  {n_new} new papers, {n_dropped} no longer listed")
+
+    result = {
         "user_id": user_id,
-        "scraped_at": datetime.now(timezone.utc).isoformat(),
-        "papers": [
-            {
-                "title": p["title"],
-                "citation_id": p["citation_id"],
-                "total_citations": None,
-                "citations_by_year": None,
-            }
-            for p in papers_metadata
-        ],
+        "scraped_at": previous_scraped_at or _now(),
+        "profile": profile or data.get("profile"),
+        "papers": papers,
     }
+    if profile:
+        result["profile"]["scraped_at"] = _now()
 
-    output = Path(path)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    with open(output, "w") as f:
-        json.dump(data, f, indent=2)
-
-    return data
+    _write(result, path)
+    return result
 
 
 def update_paper_progress(data: dict, index: int, paper: Paper, path: str) -> None:
@@ -93,9 +109,13 @@ def update_paper_progress(data: dict, index: int, paper: Paper, path: str) -> No
         paper: Paper object with scraped citation data.
         path: Output file path to re-write.
     """
-    data["papers"][index]["total_citations"] = paper.total_citations
-    data["papers"][index]["citations_by_year"] = paper.citations_by_year
-    data["scraped_at"] = datetime.now(timezone.utc).isoformat()
+    now = _now()
+    entry = data["papers"][index]
+    entry["total_citations"] = paper.total_citations
+    entry["citations_by_year"] = paper.citations_by_year
+    entry["scraped_at"] = now
+    if entry.get("pub_year") is None and paper.pub_year is not None:
+        entry["pub_year"] = paper.pub_year
+    data["scraped_at"] = now
 
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
+    _write(data, path)

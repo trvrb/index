@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 import time
 from dataclasses import dataclass
+from typing import Optional
 
 import requests
 from bs4 import BeautifulSoup
@@ -97,9 +98,35 @@ class Paper:
     citation_id: str
     total_citations: int
     citations_by_year: dict[str, int]
+    pub_year: Optional[int] = None
 
 
-def fetch_paper_list(user_id: str, delay: float = 5) -> list[dict]:
+def parse_year(text: str) -> Optional[int]:
+    """Extract a leading four-digit year, e.g. from "2018" or "2018/12/1"."""
+    match = re.match(r"\s*(\d{4})", text or "")
+    return int(match.group(1)) if match else None
+
+
+def parse_profile_stats(soup: BeautifulSoup) -> Optional[dict]:
+    """Parse the citations / h-index / i10-index table on a profile page."""
+    cells = [td.get_text(strip=True) for td in soup.select("#gsc_rsb_st td.gsc_rsb_std")]
+    if len(cells) != 6 or not all(c.isdigit() for c in cells):
+        return None
+    headers = [th.get_text(strip=True) for th in soup.select("#gsc_rsb_st th")]
+    since = parse_year(headers[-1].replace("Since", "")) if headers else None
+    values = [int(c) for c in cells]
+    return {
+        "citations": values[0],
+        "h_index": values[2],
+        "i10_index": values[4],
+        "since_year": since,
+        "citations_since": values[1],
+        "h_index_since": values[3],
+        "i10_index_since": values[5],
+    }
+
+
+def fetch_paper_list(user_id: str, delay: float = 5) -> tuple[list[dict], Optional[dict]]:
     """Fetch list of all papers for a Google Scholar user.
 
     Args:
@@ -107,9 +134,12 @@ def fetch_paper_list(user_id: str, delay: float = 5) -> list[dict]:
         delay: Seconds to wait between paginated requests.
 
     Returns:
-        List of dicts with 'title' and 'citation_id' for each paper.
+        Tuple of (papers, profile). Papers are dicts with 'title',
+        'citation_id' and 'pub_year'; profile holds the summary citation
+        stats from the first page (or None if not found).
     """
     papers = []
+    profile = None
     start = 0
     page_size = 20  # Use smaller page size to reduce rate limiting
 
@@ -118,6 +148,8 @@ def fetch_paper_list(user_id: str, delay: float = 5) -> list[dict]:
         response = fetch_with_retry(url)
 
         soup = BeautifulSoup(response.text, "html.parser")
+        if start == 0:
+            profile = parse_profile_stats(soup)
 
         # Find paper entries in the table
         rows = soup.select("tr.gsc_a_tr")
@@ -132,8 +164,12 @@ def fetch_paper_list(user_id: str, delay: float = 5) -> list[dict]:
                 # Extract citation_for_view ID from href
                 match = re.search(r"citation_for_view=([^&]+)", href)
                 if match:
-                    citation_id = match.group(1)
-                    papers.append({"title": title, "citation_id": citation_id})
+                    year_elem = row.select_one("td.gsc_a_y span.gsc_a_h")
+                    papers.append({
+                        "title": title,
+                        "citation_id": match.group(1),
+                        "pub_year": parse_year(year_elem.get_text(strip=True)) if year_elem else None,
+                    })
 
         # Check if there are more pages
         if len(rows) < page_size:
@@ -142,7 +178,7 @@ def fetch_paper_list(user_id: str, delay: float = 5) -> list[dict]:
         start += page_size
         time.sleep(delay)
 
-    return papers
+    return papers, profile
 
 
 def fetch_paper_citations(user_id: str, citation_id: str) -> Paper:
@@ -172,6 +208,14 @@ def fetch_paper_citations(user_id: str, citation_id: str) -> Paper:
         if match:
             total_citations = int(match.group(1))
 
+    # Get publication year from the details table
+    pub_year = None
+    for row in soup.select("#gsc_oci_table div.gs_scl"):
+        field = row.select_one(".gsc_oci_field")
+        value = row.select_one(".gsc_oci_value")
+        if field and value and field.get_text(strip=True) == "Publication date":
+            pub_year = parse_year(value.get_text(strip=True))
+
     # Get citations by year from the histogram
     citations_by_year = {}
     graph_bars = soup.select("#gsc_oci_graph_bars a")
@@ -194,32 +238,6 @@ def fetch_paper_citations(user_id: str, citation_id: str) -> Paper:
         citation_id=citation_id,
         total_citations=total_citations,
         citations_by_year=citations_by_year,
+        pub_year=pub_year,
     )
 
-
-def scrape_user_citations(user_id: str, delay: float = 5) -> list[Paper]:
-    """Scrape all citation data for a Google Scholar user.
-
-    Args:
-        user_id: Google Scholar user ID.
-        delay: Seconds to wait between requests.
-
-    Returns:
-        List of Paper objects with citation data.
-    """
-    # Try to load browser cookies for authentication
-    load_browser_cookies()
-
-    print(f"Fetching paper list for user {user_id}...")
-    paper_list = fetch_paper_list(user_id, delay)
-    print(f"Found {len(paper_list)} papers")
-
-    papers = []
-    for i, paper_info in enumerate(paper_list, 1):
-        print(f"Fetching citations for paper {i}/{len(paper_list)}: {paper_info['title'][:50]}...")
-        paper = fetch_paper_citations(user_id, paper_info["citation_id"])
-        papers.append(paper)
-        if i < len(paper_list):
-            time.sleep(delay)
-
-    return papers

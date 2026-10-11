@@ -5,7 +5,7 @@ import sys
 import time
 
 from .config import load_config
-from .output import load_progress, init_progress, update_paper_progress
+from .output import load_progress, merge_paper_list, reset_citations, update_paper_progress
 from .scholar import (
     RateLimitError,
     fetch_paper_citations,
@@ -35,6 +35,11 @@ def main() -> None:
         default="results/citations.json",
         help="Output JSON file path (default: results/citations.json)",
     )
+    parser.add_argument(
+        "--refresh",
+        action="store_true",
+        help="Re-scrape citations for all papers (default: only papers not yet scraped)",
+    )
 
     args = parser.parse_args()
 
@@ -48,17 +53,26 @@ def main() -> None:
     # Try to load browser cookies for authentication
     load_browser_cookies()
 
-    # Stage 1: Get paper list (or load from existing progress)
+    # Stage 1: Fetch the paper list and merge it with existing progress
     data = load_progress(args.output)
+    if data is not None and data.get("user_id") not in (None, user_id):
+        print(f"{args.output} holds data for user {data['user_id']}; starting fresh")
+        data = None
+    if data is not None and args.refresh:
+        print("Marking all papers for re-scraping")
+        reset_citations(data)
 
-    if data is None or not data.get("papers"):
-        print(f"Fetching paper list for user {user_id}...")
-        paper_list = fetch_paper_list(user_id, delay)
-        print(f"Found {len(paper_list)} papers")
-        data = init_progress(paper_list, user_id, args.output)
-        print(f"Saved paper list to {args.output}")
-    else:
-        print(f"Loaded existing progress from {args.output} ({len(data['papers'])} papers)")
+    print(f"Fetching paper list for user {user_id}...")
+    try:
+        paper_list, profile = fetch_paper_list(user_id, delay)
+    except RateLimitError as e:
+        print(f"\nRate limited: {e}")
+        sys.exit(1)
+    print(f"Found {len(paper_list)} papers")
+    if profile:
+        print(f"Profile: {profile['citations']} citations, h-index {profile['h_index']}, "
+              f"i10-index {profile['i10_index']}")
+    data = merge_paper_list(data, paper_list, profile, user_id, args.output)
 
     # Stage 2: Fetch citations for each paper that hasn't been scraped yet
     total = len(data["papers"])
@@ -66,7 +80,7 @@ def main() -> None:
     print(f"Progress: {completed}/{total} papers already scraped")
 
     if completed == total:
-        print("All papers already scraped. Done!")
+        print("All papers already scraped. Use --refresh to re-scrape citation counts.")
         return
 
     for i, paper_entry in enumerate(data["papers"]):
@@ -80,7 +94,7 @@ def main() -> None:
             completed = sum(1 for p in data["papers"] if p["citations_by_year"] is not None)
             print(f"\nRate limited: {e}")
             print(f"Progress saved: {completed}/{total} papers scraped.")
-            print("Re-run to resume from where you left off.")
+            print("Re-run without --refresh to resume from where you left off.")
             sys.exit(1)
 
         update_paper_progress(data, i, paper, args.output)
