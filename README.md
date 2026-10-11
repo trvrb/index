@@ -58,12 +58,13 @@ This reads `results/citations.json`, fits the model hyperparameters by maximum m
 - `--forecast-years N`: years to forecast after the current year (default 3)
 - `--params FILE`: use fixed hyperparameters from `model.tune` instead of fitting
 - `--drift-ages K`: number of age-specific drift parameters (default 3)
+- `--persistence RHO`: fraction of a paper's momentum kept each year (default 0.5; 0 turns momentum off)
 
 ### 3. Diagnostics (optional)
 
 ```bash
 python -m model.tune       # fit and save hyperparameters to results/tuned_params.json
-python -m model.backtest   # rolling-origin backtest of forecast accuracy
+python -m model.backtest   # rolling-origin backtest, with and without momentum
 pytest                     # unit tests
 ```
 
@@ -152,8 +153,9 @@ Model output (abbreviated):
 {
   "current_year": 2026,
   "exposure_fraction_current": 0.776,
-  "model": { "type": "poisson_state_space", "process_var": 0.158, "init_mean": 1.15,
-             "init_var": 1.38, "drift": [0.98, 0.08, -0.09], "interval": 0.8 },
+  "model": { "type": "poisson_state_space", "process_var": 0.029, "slope_var": 0.071,
+             "persistence": 0.5, "init_mean": 1.14, "init_var": 1.38,
+             "drift": [1.02, 0.08, -0.10], "interval": 0.8 },
   "summary": { "years": [...], "h_index": [...], "citations": [...],
                "h_index_to_date": 66, "i10_index_to_date": 135, "citations_to_date": 24936 },
   "forecast": { "years": [2026, 2027, 2028, 2029],
@@ -187,17 +189,19 @@ Model output (abbreviated):
 
 ## Model
 
-Each paper's log citation rate follows a random walk whose mean step depends on the paper's age. Yearly counts are Poisson, scaled by the fraction of the year observed:
+Each paper's log citation rate follows a typical life-cycle trajectory for its age, plus its own momentum. A paper rising faster than typical keeps rising faster, and the excess fades each year. Yearly counts are Poisson, scaled by the fraction of the year observed:
 
 ```
-x_0 ~ N(m0, v0)
-x_a = x_{a-1} + δ_{min(a,K)} + ε,   ε ~ N(0, q)
+x_0 ~ N(m0, v0),   d_0 ~ N(0, r / (1 − ρ²))
+d_a = ρ · d_{a-1} + ζ,                            ζ ~ N(0, r)
+x_a = x_{a-1} + δ_{min(a,K)} + ρ · d_{a-1} + ζ + ε,   ε ~ N(0, q)
 y_a ~ Poisson(e_a · exp(x_a))
 ```
 
 - **Inference:** the Laplace approximation. Its Newton iterations are Kalman filter and RTS smoother passes on Gaussian working observations.
-- **Hyperparameters:** `q`, `m0`, `v0` and `δ` are shared across papers and fit by maximizing the approximate marginal likelihood.
-- **Drift:** with K=3, a typical paper's rate rises about 2.7× into its second year, holds steady, then declines about 9% per year.
+- **Hyperparameters:** `q`, `r`, `m0`, `v0` and `δ` are shared across papers and fit by maximizing the approximate marginal likelihood.
+- **Momentum:** ρ is fixed at 0.5, so a paper's deviation from the typical trajectory halves each year. The data support momentum but can't pin down how persistent it is.
+- **Drift:** with K=3, a typical paper's rate rises about 2.8× into its second year, holds steady, then declines about 10% per year.
 - **Forecasts:** these simulate all papers jointly, which gives intervals for total citations and h-index.
 
 See `notes/model.md` for details, the model comparison, and backtest results.

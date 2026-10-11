@@ -1,9 +1,10 @@
 """Monte Carlo forecasts of citations and h-index.
 
-Draws each paper's current log rate from its Laplace posterior, completes the
-current partial year, then propagates the random walk with age-specific drift
-H years forward. Draws are joint across papers, so aggregate quantities such
-as total citations and h-index get proper intervals.
+Draws each paper's current log rate and slope deviation from their Laplace
+posterior, completes the current partial year, then propagates the damped
+trend with age-specific drift H years forward. Draws are joint across
+papers, so aggregate quantities such as total citations and h-index get
+proper intervals.
 """
 
 from __future__ import annotations
@@ -13,7 +14,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from .data import Series, h_index, i10_index
-from .kalman import LaplaceResult, ModelParams
+from .kalman import LaplaceResult, ModelParams, propagate
 
 QUANTILES = (0.1, 0.5, 0.9)
 
@@ -66,8 +67,8 @@ def simulate(
     last = lengths - 1
     rows = np.arange(n_papers)
 
-    x_T = laplace.x[rows, last]
-    P_T = laplace.P[rows, last]
+    state_T = laplace.state[rows, last]  # (x, d) at the current year
+    cov_T = laplace.state_cov[rows, last]
     y_T = np.array([s.counts[-1] for s in series])
     e_T = np.array([s.exposure[-1] for s in series])
     observed_before = np.array([s.counts[:-1].sum() for s in series])
@@ -76,21 +77,22 @@ def simulate(
     years = [current_year + h for h in range(horizon + 1)]
 
     # Analytic log-rate distribution per year
-    log_mean = np.zeros((n_papers, horizon + 1))
-    log_var = np.zeros((n_papers, horizon + 1))
-    log_mean[:, 0] = x_T
-    log_var[:, 0] = P_T
-    for h in range(1, horizon + 1):
-        log_mean[:, h] = log_mean[:, h - 1] + drift[last + h]
-        log_var[:, h] = log_var[:, h - 1] + params.process_var
+    log_mean, log_var = propagate(state_T, cov_T, last, params, horizon)
 
-    # Joint draws
+    # Joint draws of (x, d); a small jitter keeps degenerate slopes factorable
+    chol = np.linalg.cholesky(cov_T + 1e-10 * np.eye(2))
+    state = state_T + np.einsum("nij,snj->sni", chol, rng.standard_normal((n_samples, n_papers, 2)))
+    x, d = state[..., 0], state[..., 1]
+
     counts = np.zeros((n_samples, n_papers, horizon + 1))
-    x = x_T + np.sqrt(P_T) * rng.standard_normal((n_samples, n_papers))
     remaining = np.clip(1.0 - e_T, 0.0, 1.0)
-    counts[:, :, 0] = y_T + rng.poisson(remaining * np.exp(x))
+    counts[:, :, 0] = y_T + rng.poisson(remaining * np.exp(np.minimum(x, 20)))
+    rho = params.persistence
     for h in range(1, horizon + 1):
-        x = x + drift[last + h] + np.sqrt(params.process_var) * rng.standard_normal(x.shape)
+        zeta = np.sqrt(params.slope_var) * rng.standard_normal(x.shape)
+        eps = np.sqrt(params.process_var) * rng.standard_normal(x.shape)
+        x = x + drift[last + h] + rho * d + zeta + eps
+        d = rho * d + zeta
         counts[:, :, h] = rng.poisson(np.exp(np.minimum(x, 20)))
 
     cumulative = observed_before[None, :, None] + np.cumsum(counts, axis=2)

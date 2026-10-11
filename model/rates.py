@@ -25,7 +25,7 @@ from .data import (
 )
 from .forecast import aggregate_summary, paper_summaries, simulate
 from .kalman import ModelParams, poisson_laplace
-from .tune import DEFAULT_DRIFT_AGES, fit_hyperparameters
+from .tune import DEFAULT_DRIFT_AGES, DEFAULT_PERSISTENCE, fit_hyperparameters
 
 INTERVAL = 0.8
 Z_INTERVAL = 1.2815515655446004  # standard normal quantile at 0.9
@@ -115,6 +115,12 @@ def main() -> None:
         help=f"Number of age-specific drift parameters when fitting (default: {DEFAULT_DRIFT_AGES})",
     )
     parser.add_argument(
+        "--persistence",
+        type=float,
+        default=DEFAULT_PERSISTENCE,
+        help=f"Fraction of a paper's momentum kept each year when fitting (default: {DEFAULT_PERSISTENCE})",
+    )
+    parser.add_argument(
         "--forecast-years",
         type=int,
         default=3,
@@ -179,10 +185,11 @@ def main() -> None:
         params = ModelParams.from_dict(tuned.get("params", tuned))
         print(f"Using hyperparameters from {args.params}")
     else:
-        print(f"Fitting hyperparameters (K={args.drift_ages})...")
-        params, _ = fit_hyperparameters(Y, E, mask, trunc, args.drift_ages)
-    print(f"  q={params.process_var:.4f} m0={params.init_mean:.4f} "
-          f"v0={params.init_var:.4f} drift={[round(d, 4) for d in params.drift]}")
+        print(f"Fitting hyperparameters (K={args.drift_ages}, rho={args.persistence})...")
+        params, _ = fit_hyperparameters(Y, E, mask, trunc, args.drift_ages, args.persistence)
+    print(f"  q={params.process_var:.4f} r={params.slope_var:.4f} rho={params.persistence:.2f} "
+          f"m0={params.init_mean:.4f} v0={params.init_var:.4f} "
+          f"drift={[round(d, 4) for d in params.drift]}")
 
     laplace = poisson_laplace(Y, E, mask, trunc, params)
     loglik = float(laplace.loglik.sum())

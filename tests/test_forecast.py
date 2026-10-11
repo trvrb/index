@@ -61,3 +61,23 @@ def test_rate_quantiles_ordered():
         assert np.all(np.array(summary["rate_q10"]) < np.array(summary["rate_q50"]))
         assert np.all(np.array(summary["rate_q50"]) < np.array(summary["rate_q90"]))
         assert summary["cumulative_q50"][0] >= 0
+
+
+def test_momentum_carries_recent_trend():
+    params = ModelParams(process_var=0.03, init_mean=1.0, init_var=1.0, drift=[1.0, 0.0, -0.1],
+                         slope_var=0.07, persistence=0.5)
+    flat = {str(y): 40 for y in range(2015, 2022)}
+    papers = [
+        {"title": "Rising", "citations_by_year": {**flat, "2022": 60, "2023": 90, "2024": 60}},
+        {"title": "Falling", "citations_by_year": {**flat, "2022": 25, "2023": 15, "2024": 4}},
+    ]
+    series = [build_series(p, SCRAPED_AT) for p in papers]
+    Y, E, mask, trunc = to_arrays(series)
+    laplace = poisson_laplace(Y, E, mask, trunc, params)
+    forecast = simulate(series, laplace, params, 2024, horizon=3, n_samples=10, seed=0)
+
+    steps = np.diff(forecast.log_rate_mean, axis=1)
+    deviation = steps - (-0.1)  # both papers are past the last drift age
+    assert np.all(deviation[0] > 0) and np.all(deviation[1] < 0)
+    # Momentum fades by rho each year
+    np.testing.assert_allclose(deviation[:, 1:] / deviation[:, :-1], 0.5)

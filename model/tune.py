@@ -1,8 +1,9 @@
 """Hyperparameter fitting for the citation rate model via marginal likelihood.
 
-Fits the process variance q, the first-year prior (m0, v0) and the
-age-specific drift delta_1..delta_K by maximizing the Laplace-approximate
-marginal likelihood summed across all papers.
+Fits the level and slope variances (q, r), the first-year prior (m0, v0)
+and the age-specific drift delta_1..delta_K by maximizing the
+Laplace-approximate marginal likelihood summed across all papers, with the
+momentum persistence rho held fixed.
 
 Usage:
     python -m model.tune --input results/citations.json --output results/tuned_params.json
@@ -22,14 +23,17 @@ from .data import build_series, load_citations, parse_scraped_at, to_arrays
 from .kalman import ModelParams, poisson_laplace
 
 DEFAULT_DRIFT_AGES = 3
+DEFAULT_PERSISTENCE = 0.5
 
 
-def _unpack(theta: np.ndarray) -> ModelParams:
+def _unpack(theta: np.ndarray, drift_ages: int, persistence: float) -> ModelParams:
     return ModelParams(
         process_var=float(np.exp(theta[0])),
         init_mean=float(theta[1]),
         init_var=float(np.exp(theta[2])),
-        drift=[float(v) for v in theta[3:]],
+        drift=[float(v) for v in theta[3 : 3 + drift_ages]],
+        slope_var=float(np.exp(theta[3 + drift_ages])) if persistence > 0 else 0.0,
+        persistence=persistence,
     )
 
 
@@ -39,46 +43,62 @@ def fit_hyperparameters(
     mask: np.ndarray,
     trunc: np.ndarray,
     drift_ages: int = DEFAULT_DRIFT_AGES,
+    persistence: float = DEFAULT_PERSISTENCE,
     init: Optional[ModelParams] = None,
 ) -> tuple[ModelParams, float]:
     """Maximize the Laplace marginal likelihood over hyperparameters.
+
+    The persistence of slope deviations (rho) is held fixed: the likelihood
+    is nearly flat in rho above about 0.3, and its maximum (near 1) turns
+    momentum into permanent per-paper growth rates that forecast poorly in
+    backtests. See notes/model.md.
 
     Args:
         Y, E, mask, trunc: Arrays from data.to_arrays.
         drift_ages: Number of age-specific drift parameters K (0 gives a
             driftless random walk).
+        persistence: Fixed rho; 0 gives a random walk with no momentum.
         init: Starting values.
 
     Returns:
         Tuple of (fitted params, total log-likelihood).
     """
     if init is None:
-        default_drift = [0.5, 0.0, -0.05]
+        default_drift = [1.0, 0.08, -0.1]
         init = ModelParams(
-            process_var=0.2,
+            process_var=0.05 if persistence > 0 else 0.15,
             init_mean=1.0,
             init_var=1.0,
             drift=[default_drift[min(k, 2)] for k in range(drift_ages)],
+            slope_var=0.05,
         )
     theta0 = np.array(
         [np.log(init.process_var), init.init_mean, np.log(init.init_var)]
         + list(init.drift[:drift_ages])
         + [0.0] * max(0, drift_ages - len(init.drift))
+        + ([np.log(max(init.slope_var, 1e-3))] if persistence > 0 else [])
     )
+
+    # Successive evaluations have similar modes, so start Newton from the last one
+    last_mode = {"x": None}
 
     def neg_loglik(theta: np.ndarray) -> float:
         if np.any(np.abs(theta) > 20):
             return np.inf
-        result = poisson_laplace(Y, E, mask, trunc, _unpack(theta))
+        params = _unpack(theta, drift_ages, persistence)
+        result = poisson_laplace(Y, E, mask, trunc, params, init_x=last_mode["x"])
         total = result.loglik.sum()
-        return -total if np.isfinite(total) else np.inf
+        if not np.isfinite(total):
+            return np.inf
+        last_mode["x"] = result.x
+        return -total
 
     options = {"maxiter": 2000 * len(theta0), "xatol": 1e-4, "fatol": 1e-4, "adaptive": True}
     result = minimize(neg_loglik, theta0, method="Nelder-Mead", options=options)
     # Restart from the optimum, since Nelder-Mead can stall
     result = minimize(neg_loglik, result.x, method="Nelder-Mead", options=options)
 
-    return _unpack(result.x), -float(result.fun)
+    return _unpack(result.x, drift_ages, persistence), -float(result.fun)
 
 
 def main() -> None:
@@ -104,6 +124,12 @@ def main() -> None:
         default=DEFAULT_DRIFT_AGES,
         help=f"Number of age-specific drift parameters (default: {DEFAULT_DRIFT_AGES})",
     )
+    parser.add_argument(
+        "--persistence",
+        type=float,
+        default=DEFAULT_PERSISTENCE,
+        help=f"Fraction of a paper's momentum kept each year (default: {DEFAULT_PERSISTENCE})",
+    )
     args = parser.parse_args()
 
     data = load_citations(args.input)
@@ -114,8 +140,10 @@ def main() -> None:
           f"({int((Y[mask] == 0).sum())} zero years)...")
 
     start = time.time()
-    params, loglik = fit_hyperparameters(Y, E, mask, trunc, args.drift_ages)
+    params, loglik = fit_hyperparameters(Y, E, mask, trunc, args.drift_ages, args.persistence)
     print(f"Done in {time.time() - start:.1f}s")
+    print(f"  persistence (rho, fixed): {params.persistence:.2f}")
+    print(f"  slope_var (r):   {params.slope_var:.4f}")
     print(f"  process_var (q): {params.process_var:.4f}")
     print(f"  init_mean (m0):  {params.init_mean:.4f}")
     print(f"  init_var (v0):   {params.init_var:.4f}")
@@ -126,6 +154,7 @@ def main() -> None:
         "input_file": args.input,
         "n_papers": len(series),
         "drift_ages": args.drift_ages,
+        "persistence": args.persistence,
         "params": params.to_dict(),
         "log_likelihood": loglik,
     }

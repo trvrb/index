@@ -4,13 +4,15 @@ from scipy.optimize import minimize
 from scipy.special import gammaln
 from scipy.stats import multivariate_normal
 
-from model.kalman import ModelParams, kalman_smoother, log_posterior, poisson_laplace
+from model.kalman import ModelParams, kalman_smoother, log_posterior, poisson_laplace, propagate
 
 PARAMS = ModelParams(process_var=0.2, init_mean=1.0, init_var=1.5, drift=[0.8, -0.1])
+MOMENTUM = ModelParams(process_var=0.05, init_mean=1.0, init_var=1.5, drift=[0.8, -0.1],
+                       slope_var=0.1, persistence=0.5)
 
 
 def scalar_smoother(z, R, params):
-    """Reference scalar Kalman filter and RTS smoother."""
+    """Reference scalar Kalman filter and RTS smoother (no momentum)."""
     T = len(z)
     drift = params.drift_by_age(T)
     xp, Pp, xf, Pf = (np.zeros(T) for _ in range(4))
@@ -33,6 +35,31 @@ def scalar_smoother(z, R, params):
     return xs, Ps, loglik
 
 
+def path_moments(params, T):
+    """Mean and covariance of the log-rate path, built from independent shocks.
+
+    Basis: x_0, d_0, zeta_1..zeta_{T-1}, eps_1..eps_{T-1}.
+    """
+    rho = params.persistence
+    n = 2 + 2 * (T - 1)
+    variances = np.array(
+        [params.init_var, params.init_cov()[1, 1]]
+        + [params.slope_var] * (T - 1) + [params.process_var] * (T - 1)
+    )
+    drift = params.drift_by_age(T)
+    x, d = np.eye(n)[0], np.eye(n)[1]
+    mean = [params.init_mean]
+    rows = [x]
+    for a in range(1, T):
+        zeta, eps = np.eye(n)[1 + a], np.eye(n)[T + a]
+        x = x + rho * d + zeta + eps
+        d = rho * d + zeta
+        mean.append(mean[-1] + drift[a])
+        rows.append(x)
+    A = np.array(rows)
+    return np.array(mean), A @ np.diag(variances) @ A.T
+
+
 def test_batched_smoother_matches_scalar_reference():
     rng = np.random.default_rng(1)
     lengths = [1, 4, 7]
@@ -40,26 +67,34 @@ def test_batched_smoother_matches_scalar_reference():
     R = rng.uniform(0.1, 2.0, size=(3, 7))
     mask = np.arange(7)[None, :] < np.array(lengths)[:, None]
 
-    xs, Ps, loglik = kalman_smoother(z, R, mask, PARAMS)
+    state, cov, loglik = kalman_smoother(z, R, mask, PARAMS)
     for i, n in enumerate(lengths):
         ref_x, ref_P, ref_ll = scalar_smoother(z[i, :n], R[i, :n], PARAMS)
-        np.testing.assert_allclose(xs[i, :n], ref_x)
-        np.testing.assert_allclose(Ps[i, :n], ref_P)
+        np.testing.assert_allclose(state[i, :n, 0], ref_x)
+        np.testing.assert_allclose(cov[i, :n, 0, 0], ref_P)
         assert loglik[i] == pytest.approx(ref_ll)
 
 
-def test_filter_loglik_matches_multivariate_normal():
+@pytest.mark.parametrize("params", [PARAMS, MOMENTUM])
+def test_filter_loglik_matches_multivariate_normal(params):
     T = 5
     z = np.array([[0.3, 1.2, 2.5, 2.0, 1.8]])
     R = np.array([[0.5, 0.2, 0.3, 0.4, 0.1]])
-    _, _, loglik = kalman_smoother(z, R, np.ones((1, T), dtype=bool), PARAMS)
+    _, _, loglik = kalman_smoother(z, R, np.ones((1, T), dtype=bool), params)
 
-    # x_t = x_0 + sum of drifts and steps, so Cov(x_s, x_t) = v0 + q * min(s, t)
-    drift = PARAMS.drift_by_age(T)
-    mean = PARAMS.init_mean + np.cumsum(drift)
-    ages = np.arange(T)
-    cov = PARAMS.init_var + PARAMS.process_var * np.minimum.outer(ages, ages) + np.diag(R[0])
-    assert loglik[0] == pytest.approx(multivariate_normal(mean, cov).logpdf(z[0]))
+    mean, cov = path_moments(params, T)
+    expected = multivariate_normal(mean, cov + np.diag(R[0])).logpdf(z[0])
+    assert loglik[0] == pytest.approx(expected)
+
+
+def test_log_posterior_prior_matches_multivariate_normal():
+    x = np.array([[0.5, 1.4, 1.9, 1.7]])
+    mask = np.ones_like(x, dtype=bool)
+    zeros = np.zeros_like(x)
+    # With no observations contributing (Y = 0, E tiny), only the prior remains
+    lp = log_posterior(x, zeros, np.full_like(x, 1e-300), mask, np.zeros_like(mask), MOMENTUM)
+    mean, cov = path_moments(MOMENTUM, 4)
+    assert lp[0] == pytest.approx(multivariate_normal(mean, cov).logpdf(x[0]))
 
 
 def _one_series(counts, exposure=None, truncated=False):
@@ -71,13 +106,14 @@ def _one_series(counts, exposure=None, truncated=False):
     return Y, E, mask, trunc
 
 
+@pytest.mark.parametrize("params", [PARAMS, MOMENTUM])
 @pytest.mark.parametrize("truncated", [False, True])
-def test_laplace_mode_and_variance(truncated):
+def test_laplace_mode_and_variance(params, truncated):
     Y, E, mask, trunc = _one_series([2, 7, 0, 3, 1], [1, 1, 1, 1, 0.4], truncated)
-    result = poisson_laplace(Y, E, mask, trunc, PARAMS)
+    result = poisson_laplace(Y, E, mask, trunc, params)
 
     def neg_log_post(x):
-        return -log_posterior(x[None, :], Y, E, mask, trunc, PARAMS)[0]
+        return -log_posterior(x[None, :], Y, E, mask, trunc, params)[0]
 
     direct = minimize(neg_log_post, np.zeros(5), method="BFGS", options={"gtol": 1e-10})
     np.testing.assert_allclose(result.x[0], direct.x, atol=1e-5)
@@ -100,15 +136,18 @@ def test_laplace_likelihood_matches_quadrature():
     # Laplace is accurate when counts are large
     counts = np.array([200.0, 300.0])
     Y, E, mask, trunc = _one_series(counts)
-    params = ModelParams(process_var=0.3, init_mean=5.0, init_var=1.0, drift=[0.2])
+    params = ModelParams(process_var=0.1, init_mean=5.0, init_var=1.0, drift=[0.2],
+                         slope_var=0.2, persistence=0.5)
     result = poisson_laplace(Y, E, mask, trunc, params)
 
+    # x_1 | x_0 ~ N(x_0 + drift, rho^2 Var(d_0) + r + q)
+    step_var = params.persistence**2 * params.init_cov()[1, 1] + params.slope_var + params.process_var
     grid = [np.linspace(m - 8 * np.sqrt(v), m + 8 * np.sqrt(v), 801)
             for m, v in zip(result.x[0], result.P[0])]
     x0, x1 = np.meshgrid(*grid, indexing="ij")
     log_prior = (
         -0.5 * (np.log(2 * np.pi * params.init_var) + (x0 - params.init_mean) ** 2 / params.init_var)
-        - 0.5 * (np.log(2 * np.pi * params.process_var) + (x1 - x0 - 0.2) ** 2 / params.process_var)
+        - 0.5 * (np.log(2 * np.pi * step_var) + (x1 - x0 - 0.2) ** 2 / step_var)
     )
     log_lik = sum(c * x - np.exp(x) - gammaln(c + 1) for c, x in zip(counts, (x0, x1)))
     log_joint = log_prior + log_lik
@@ -122,3 +161,16 @@ def test_zero_counts_pull_rate_down():
     high = poisson_laplace(*_one_series([5, 5, 5, 5, 5]), PARAMS)
     trailing_zeros = poisson_laplace(*_one_series([5, 5, 5, 0, 0]), PARAMS)
     assert trailing_zeros.x[0, -1] < high.x[0, -1] - 1.0
+
+
+def test_momentum_decays_geometrically():
+    params = ModelParams(process_var=0.05, init_mean=1.0, init_var=1.0, drift=[0.0],
+                         slope_var=0.1, persistence=0.5)
+    mean = np.array([[2.0, 0.4], [2.0, -0.4], [2.0, 0.0]])  # rising, falling, flat
+    cov = np.zeros((3, 2, 2))
+    means, variances = propagate(mean, cov, np.array([5, 5, 5]), params, horizon=3)
+    steps = np.diff(means, axis=1)
+    np.testing.assert_allclose(steps[0], [0.2, 0.1, 0.05])
+    np.testing.assert_allclose(steps[1], [-0.2, -0.1, -0.05])
+    np.testing.assert_allclose(steps[2], [0.0, 0.0, 0.0])
+    assert np.all(np.diff(variances, axis=1) > 0)

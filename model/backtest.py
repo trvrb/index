@@ -17,8 +17,8 @@ from scipy.special import gammaln, logsumexp
 from scipy.stats import poisson
 
 from .data import build_series, load_citations, parse_scraped_at, to_arrays
-from .kalman import ModelParams, poisson_laplace
-from .tune import DEFAULT_DRIFT_AGES, fit_hyperparameters
+from .kalman import ModelParams, poisson_laplace, propagate
+from .tune import DEFAULT_DRIFT_AGES, DEFAULT_PERSISTENCE, fit_hyperparameters
 
 GH_NODES, GH_WEIGHTS = np.polynomial.hermite_e.hermegauss(60)
 GH_LOG_WEIGHTS = np.log(GH_WEIGHTS / GH_WEIGHTS.sum())
@@ -82,23 +82,24 @@ def predict(
     Papers that existed at the origin are predicted from their posterior.
     Papers starting after the origin are predicted from the population prior.
     """
-    drift = params.drift_by_age(target - min(s.years[0] for s in series) + 2)
     horizon = target - origin
 
     # Existing papers
     lengths = np.array([len(s.years) for s in series])
     rows = np.arange(len(series))
     last = lengths - 1
-    mean = laplace.x[rows, last] + sum(drift[last + h] for h in range(1, horizon + 1))
-    var = laplace.P[rows, last] + horizon * params.process_var
+    means, variances = propagate(
+        laplace.state[rows, last], laplace.state_cov[rows, last], last, params, horizon
+    )
+    mean, var = means[:, -1], variances[:, -1]
     titles = {s.title for s in series}
     truth_existing = []
     for s in series:
         paper = next(p for p in papers if p["title"] == s.title)
         truth_existing.append((paper.get("citations_by_year") or {}).get(str(target), 0))
 
-    # Papers that start after the origin
-    new_mean, new_var, new_trunc, truth_new = [], [], [], []
+    # Papers that start after the origin, projected from the first-year prior
+    new_ages, new_trunc, truth_new = [], [], []
     for paper in papers:
         if paper["title"] in titles:
             continue
@@ -106,10 +107,18 @@ def predict(
         if s is None or s.years[0] <= origin:
             continue
         age = target - s.years[0]
-        new_mean.append(params.init_mean + drift[1 : age + 1].sum())
-        new_var.append(params.init_var + age * params.process_var)
+        new_ages.append(age)
         new_trunc.append(s.first_obs_truncated and age == 0)
         truth_new.append(s.counts[-1])
+
+    new_mean, new_var = np.zeros(len(new_ages)), np.zeros(len(new_ages))
+    if new_ages:
+        n_new = len(new_ages)
+        prior_mean = np.tile([params.init_mean, 0.0], (n_new, 1))
+        prior_cov = np.tile(params.init_cov(), (n_new, 1, 1))
+        means, variances = propagate(prior_mean, prior_cov, np.zeros(n_new, dtype=int), params, max(new_ages))
+        new_mean = means[np.arange(n_new), new_ages]
+        new_var = variances[np.arange(n_new), new_ages]
 
     truths = {
         "existing": np.array(truth_existing, dtype=float),
@@ -117,7 +126,7 @@ def predict(
     }
     predictives = {
         "existing": Predictive(mean, var, np.zeros(len(series), dtype=bool)),
-        "new": Predictive(np.array(new_mean), np.array(new_var), np.array(new_trunc, dtype=bool)),
+        "new": Predictive(new_mean, new_var, np.array(new_trunc, dtype=bool)),
     }
     return truths, predictives
 
@@ -152,8 +161,8 @@ def main() -> None:
         "--origins",
         type=int,
         nargs="+",
-        default=[2020, 2021, 2022, 2023],
-        help="Last year of data used for fitting (default: 2020 2021 2022 2023)",
+        default=[2020, 2021, 2022, 2023, 2024],
+        help="Last year of data used for fitting (default: 2020-2024)",
     )
     parser.add_argument(
         "--horizons",
@@ -166,8 +175,15 @@ def main() -> None:
         "--drift-ages",
         type=int,
         nargs="+",
-        default=[0, DEFAULT_DRIFT_AGES],
-        help=f"Drift parameter counts K to compare (default: 0 {DEFAULT_DRIFT_AGES})",
+        default=[DEFAULT_DRIFT_AGES],
+        help=f"Drift parameter counts K to compare (default: {DEFAULT_DRIFT_AGES})",
+    )
+    parser.add_argument(
+        "--persistence",
+        type=float,
+        nargs="+",
+        default=[0.0, DEFAULT_PERSISTENCE],
+        help=f"Momentum persistence values rho to compare (default: 0 {DEFAULT_PERSISTENCE})",
     )
     args = parser.parse_args()
 
@@ -175,14 +191,14 @@ def main() -> None:
     scraped_at = parse_scraped_at(data["scraped_at"])
     papers = [p for p in data.get("papers", []) if p.get("citations_by_year") is not None]
 
-    print(f"{'K':>2} {'h':>2} {'group':>8} {'n':>5} {'log score':>10} "
+    print(f"{'K':>2} {'rho':>4} {'h':>2} {'group':>8} {'n':>5} {'log score':>10} "
           f"{'80% cov':>8} {'MAE log1p':>10} {'pred/obs total by origin'}")
-    for K in args.drift_ages:
+    for K, rho in [(K, rho) for K in args.drift_ages for rho in args.persistence]:
         totals: dict[tuple[int, str], dict] = {}
         for origin in args.origins:
             series = [s for p in papers if (s := build_series(p, scraped_at, end_year=origin))]
             Y, E, mask, trunc = to_arrays(series)
-            params, _ = fit_hyperparameters(Y, E, mask, trunc, K)
+            params, _ = fit_hyperparameters(Y, E, mask, trunc, K, rho)
             laplace = poisson_laplace(Y, E, mask, trunc, params)
 
             for h in args.horizons:
@@ -206,7 +222,7 @@ def main() -> None:
             if not n:
                 continue
             ratios = " ".join(f"{r:.2f}" for r in entry["ratios"])
-            print(f"{K:>2} {h:>2} {group:>8} {n:>5} {entry['log_score'] / n:>10.3f} "
+            print(f"{K:>2} {rho:>4.1f} {h:>2} {group:>8} {n:>5} {entry['log_score'] / n:>10.3f} "
                   f"{entry['covered'] / n:>8.2f} {entry['abs_error'] / n:>10.3f} {ratios}")
 
 
