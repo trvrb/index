@@ -1,6 +1,6 @@
 {
   "user_id": "RIi-1pAAAAAJ",
-  "scraped_at": "2026-10-12T17:25:26.989531+00:00",
+  "scraped_at": "2026-10-12T18:18:45.546004+00:00",
   "profile": {
     "citations": 24967,
     "h_index": 66,
@@ -9,7 +9,7 @@
     "citations_since": 16858,
     "h_index_since": 57,
     "i10_index_since": 122,
-    "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+    "scraped_at": "2026-10-12T18:18:45.546004+00:00"
   },
   "papers": [
     {
@@ -30,7 +30,7 @@
         "2026": 390
       },
       "fetched_at": "2026-10-12T17:24:59.124119+00:00",
-      "scraped_at": "2026-10-12T17:24:59.124119+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Multiplex PCR method for MinION and Illumina sequencing of Zika and other virus genomes directly from clinical samples",
@@ -51,7 +51,7 @@
         "2026": 141
       },
       "fetched_at": "2026-10-12T17:25:01.261464+00:00",
-      "scraped_at": "2026-10-12T17:25:01.261464+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Improving the accuracy of demographic and molecular clock model comparison while accommodating phylogenetic uncertainty",
@@ -77,7 +77,7 @@
         "2026": 54
       },
       "fetched_at": "2026-10-11T08:44:01.378525+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "The early spread and epidemic ignition of HIV-1 in human populations",
@@ -101,7 +101,7 @@
         "2026": 50
       },
       "fetched_at": "2026-10-12T17:25:03.390812+00:00",
-      "scraped_at": "2026-10-12T17:25:03.390812+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Persistent HIV-1 replication maintains the tissue reservoir during therapy",
@@ -123,7 +123,7 @@
         "2026": 27
       },
       "fetched_at": "2026-10-12T17:25:11.988187+00:00",
-      "scraped_at": "2026-10-12T17:25:11.988187+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Global circulation patterns of seasonal influenza viruses vary with antigenic drift",
@@ -146,7 +146,7 @@
         "2026": 99
       },
       "fetched_at": "2026-10-11T08:44:07.783138+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Establishment and cryptic transmission of Zika virus in Brazil and the Americas",
@@ -168,7 +168,7 @@
         "2026": 35
       },
       "fetched_at": "2026-10-11T08:44:09.908670+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Viral phylodynamics",
@@ -193,7 +193,7 @@
         "2026": 48
       },
       "fetched_at": "2026-10-11T08:44:12.055108+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Genetic diversity and protective efficacy of the RTS, S/AS01 malaria vaccine",
@@ -216,7 +216,7 @@
         "2026": 35
       },
       "fetched_at": "2026-10-11T08:44:14.223841+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "SARS-CoV-2 variants in patients with immunosuppression",
@@ -233,7 +233,7 @@
         "2026": 32
       },
       "fetched_at": "2026-10-11T08:44:16.352571+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Virus genomes reveal factors that spread and sustained the Ebola epidemic",
@@ -254,7 +254,7 @@
         "2026": 32
       },
       "fetched_at": "2026-10-11T08:44:18.492573+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Integrating influenza antigenic dynamics with molecular evolution",
@@ -278,7 +278,7 @@
         "2026": 62
       },
       "fetched_at": "2026-10-12T17:25:14.129091+00:00",
-      "scraped_at": "2026-10-12T17:25:14.129091+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Unifying viral genetics and human transportation data to predict the global transmission dynamics of human influenza H3N2",
@@ -303,7 +303,7 @@
         "2026": 29
       },
       "fetched_at": "2026-10-11T08:44:22.766175+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Genomic epidemiology reveals multiple introductions of Zika virus into the United States",
@@ -324,7 +324,7 @@
         "2026": 22
       },
       "fetched_at": "2026-10-11T08:44:24.896896+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Urgent need for a non-discriminatory and non-stigmatizing nomenclature for monkeypox virus",
@@ -340,7 +340,7 @@
         "2026": 46
       },
       "fetched_at": "2026-10-12T17:25:16.280813+00:00",
-      "scraped_at": "2026-10-12T17:25:16.280813+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Ebola virus epidemiology, transmission, and evolution during seven months in Sierra Leone",
@@ -363,7 +363,7 @@
         "2026": 12
       },
       "fetched_at": "2026-10-11T08:44:29.225624+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "SARS-CoV-2 Variants of Interest and Concern naming scheme conducive for global discourse",
@@ -381,7 +381,7 @@
         "2026": 22
       },
       "fetched_at": "2026-10-12T17:25:05.534637+00:00",
-      "scraped_at": "2026-10-12T17:25:05.534637+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "MERS-CoV spillover at the camel-human interface",
@@ -401,7 +401,7 @@
         "2026": 27
       },
       "fetched_at": "2026-10-12T17:25:18.414172+00:00",
-      "scraped_at": "2026-10-12T17:25:18.414172+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Genomic surveillance reveals multiple introductions of SARS-CoV-2 into Northern California",
@@ -419,7 +419,7 @@
         "2026": 17
       },
       "fetched_at": "2026-10-11T08:44:35.619783+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Cryptic transmission of SARS-CoV-2 in Washington state",
@@ -437,7 +437,7 @@
         "2026": 11
       },
       "fetched_at": "2026-10-11T08:44:37.764377+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Deep mutational scanning of hemagglutinin helps predict evolutionary fates of human H3N2 influenza variants",
@@ -458,7 +458,7 @@
         "2026": 51
       },
       "fetched_at": "2026-10-11T08:44:39.906882+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Emergence and expansion of SARS-CoV-2 B. 1.526 after identification in New York",
@@ -476,7 +476,7 @@
         "2026": 10
       },
       "fetched_at": "2026-10-11T08:44:42.044015+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Augur: a bioinformatics toolkit for phylogenetic analyses of human pathogens",
@@ -494,7 +494,7 @@
         "2026": 56
       },
       "fetched_at": "2026-10-12T17:25:07.697074+00:00",
-      "scraped_at": "2026-10-12T17:25:07.697074+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Prediction, dynamics, and visualization of antigenic phenotypes of seasonal influenza viruses",
@@ -517,7 +517,7 @@
         "2026": 22
       },
       "fetched_at": "2026-10-12T17:25:20.542696+00:00",
-      "scraped_at": "2026-10-12T17:25:20.542696+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Global migration dynamics underlie evolution and persistence of human influenza A (H3N2)",
@@ -545,7 +545,7 @@
         "2026": 7
       },
       "fetched_at": "2026-10-11T08:44:48.575256+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Optimization of gene expression by natural selection",
@@ -574,7 +574,7 @@
         "2026": 15
       },
       "fetched_at": "2026-10-12T17:25:22.690857+00:00",
-      "scraped_at": "2026-10-12T17:25:22.690857+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "The evolving SARS-CoV-2 epidemic in Africa: Insights from rapidly expanding genomic surveillance",
@@ -591,7 +591,7 @@
         "2026": 52
       },
       "fetched_at": "2026-10-11T08:44:52.859671+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Evidence for limited early spread of COVID-19 within the United States, January\u2013February 2020",
@@ -609,7 +609,7 @@
         "2026": 4
       },
       "fetched_at": "2026-10-11T08:44:55.014927+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Twenty years of West Nile virus spread and evolution in the Americas visualized by Nextstrain",
@@ -628,7 +628,7 @@
         "2026": 20
       },
       "fetched_at": "2026-10-11T08:44:57.153856+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Eight challenges in phylodynamic inference",
@@ -652,7 +652,7 @@
         "2026": 7
       },
       "fetched_at": "2026-10-11T08:44:59.272841+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Predictive modeling of influenza shows the promise of applied evolutionary biology",
@@ -672,7 +672,7 @@
         "2026": 21
       },
       "fetched_at": "2026-10-11T08:45:01.418478+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Spike deep mutational scanning helps predict success of SARS-CoV-2 clades",
@@ -687,7 +687,7 @@
         "2026": 62
       },
       "fetched_at": "2026-10-11T08:45:03.537500+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Nextflu: real-time tracking of seasonal influenza virus evolution in humans",
@@ -710,7 +710,7 @@
         "2026": 8
       },
       "fetched_at": "2026-10-11T08:45:05.666583+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Acute SARS-CoV-2 infections harbor limited within-host diversity and transmit via tight transmission bottlenecks",
@@ -727,7 +727,7 @@
         "2026": 21
       },
       "fetched_at": "2026-10-12T17:25:09.838319+00:00",
-      "scraped_at": "2026-10-12T17:25:09.838319+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Canalization of the evolutionary trajectory of the human influenza virus",
@@ -753,7 +753,7 @@
         "2026": 12
       },
       "fetched_at": "2026-10-11T08:45:09.924903+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Comparison of symptoms and RNA levels in children and adults with SARS-CoV-2 infection in the community setting",
@@ -770,7 +770,7 @@
         "2026": 6
       },
       "fetched_at": "2026-10-11T08:45:12.099262+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Within-host evolution of human influenza virus",
@@ -790,7 +790,7 @@
         "2026": 11
       },
       "fetched_at": "2026-10-11T08:45:14.236474+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Rapid and parallel adaptive mutations in spike S1 drive clade success in SARS-CoV-2",
@@ -807,7 +807,7 @@
         "2026": 16
       },
       "fetched_at": "2026-10-11T08:45:16.369564+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Genome-wide evolutionary dynamics of influenza B viruses on a global scale",
@@ -827,7 +827,7 @@
         "2026": 12
       },
       "fetched_at": "2026-10-11T08:45:18.629458+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Ebola virus transmission initiated by relapse of systemic Ebola virus disease",
@@ -845,7 +845,7 @@
         "2026": 24
       },
       "fetched_at": "2026-10-11T08:45:20.763064+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Ten recommendations for supporting open pathogen genomic analysis in public health",
@@ -863,7 +863,7 @@
         "2026": 18
       },
       "fetched_at": "2026-10-11T08:45:22.884229+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Early detection of Covid-19 through a citywide pandemic surveillance platform",
@@ -881,7 +881,7 @@
         "2026": 3
       },
       "fetched_at": "2026-10-11T08:45:25.038705+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Mapping person-to-person variation in viral mutations that escape polyclonal serum targeting influenza hemagglutinin",
@@ -900,7 +900,7 @@
         "2026": 21
       },
       "fetched_at": "2026-10-11T08:45:27.166736+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Evidence for adaptive evolution in the receptor-binding domain of seasonal coronaviruses OC43 and 229e",
@@ -917,7 +917,7 @@
         "2026": 7
       },
       "fetched_at": "2026-10-11T08:45:29.296918+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Viral factors in influenza pandemic risk assessment",
@@ -938,7 +938,7 @@
         "2026": 8
       },
       "fetched_at": "2026-10-11T08:45:31.430963+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Spatial guilds in the Serengeti food web revealed by a Bayesian group model",
@@ -964,7 +964,7 @@
         "2026": 12
       },
       "fetched_at": "2026-10-11T08:45:33.556207+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Reassortment between influenza B lineages and the emergence of a coadapted PB1\u2013PB2\u2013HA gene complex",
@@ -987,7 +987,7 @@
         "2026": 4
       },
       "fetched_at": "2026-10-11T08:45:35.697491+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Strength and tempo of selection revealed in viral gene genealogies",
@@ -1013,7 +1013,7 @@
         "2026": 5
       },
       "fetched_at": "2026-10-11T08:45:37.827746+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Viral genomes reveal patterns of the SARS-CoV-2 outbreak in Washington State",
@@ -1031,7 +1031,7 @@
         "2026": 7
       },
       "fetched_at": "2026-10-11T08:45:39.987323+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Associations between severe acute respiratory syndrome coronavirus 2 (SARS-CoV-2) variants and risk of coronavirus disease 2019 (COVID-19) hospitalization among confirmed cases\u00a0\u2026",
@@ -1048,7 +1048,7 @@
         "2026": 6
       },
       "fetched_at": "2026-10-11T08:45:42.135451+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Characteristics of COVID-19 in homeless shelters: a community-based surveillance study",
@@ -1066,7 +1066,7 @@
         "2026": 2
       },
       "fetched_at": "2026-10-11T08:45:44.307893+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Integrating genotypes and phenotypes improves long-term forecasts of seasonal influenza A/H3N2 evolution",
@@ -1084,7 +1084,7 @@
         "2026": 24
       },
       "fetched_at": "2026-10-11T08:45:46.501964+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "The roles of competition and mutation in shaping antigenic and genetic diversity in influenza",
@@ -1109,7 +1109,7 @@
         "2026": 4
       },
       "fetched_at": "2026-10-11T08:45:48.636191+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Integration of genomic sequencing into the response to the Ebola virus outbreak in Nord Kivu, Democratic Republic of the Congo",
@@ -1126,7 +1126,7 @@
         "2026": 20
       },
       "fetched_at": "2026-10-12T17:25:24.831891+00:00",
-      "scraped_at": "2026-10-12T17:25:24.831891+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Comprehensive mapping of adaptation of the avian influenza polymerase protein PB2 to humans",
@@ -1145,7 +1145,7 @@
         "2026": 11
       },
       "fetched_at": "2026-10-11T08:45:55.063234+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "A Bayesian approach to infer recombination patterns in coronaviruses",
@@ -1162,7 +1162,7 @@
         "2026": 5
       },
       "fetched_at": "2026-10-12T17:25:26.989531+00:00",
-      "scraped_at": "2026-10-12T17:25:26.989531+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Identification of low-and high-impact hemagglutinin amino acid substitutions that drive antigenic drift of influenza A (H1N1) viruses",
@@ -1185,7 +1185,7 @@
         "2026": 5
       },
       "fetched_at": "2026-10-11T08:45:57.186827+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Dengue genetic divergence generates within-serotype antigenic variation, but serotypes dominate evolutionary dynamics",
@@ -1204,7 +1204,7 @@
         "2026": 11
       },
       "fetched_at": "2026-10-11T08:45:59.307350+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Formation and Longevity of Chimeric and Duplicate Genes inDrosophila melanogaster",
@@ -1232,7 +1232,7 @@
         "2026": 3
       },
       "fetched_at": "2026-10-11T08:46:01.433664+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Underdetected dispersal and extensive local transmission drove the 2022 mpox epidemic",
@@ -1246,7 +1246,7 @@
         "2026": 21
       },
       "fetched_at": "2026-10-11T08:46:03.554111+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "The ability of single genes vs full genomes to resolve time and space in outbreak analysis",
@@ -1265,7 +1265,7 @@
         "2026": 8
       },
       "fetched_at": "2026-10-11T08:46:05.670467+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Modern-day SIV viral diversity generated by extensive recombination and cross-species transmission",
@@ -1286,7 +1286,7 @@
         "2026": 3
       },
       "fetched_at": "2026-10-11T08:46:07.803561+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Quantifying and mitigating the effect of preferential sampling on phylodynamic inference",
@@ -1309,7 +1309,7 @@
         "2026": 3
       },
       "fetched_at": "2026-10-11T08:46:09.939678+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Impacts of human mobility on the citywide transmission dynamics of 18 respiratory viruses in pre-and post-COVID-19 pandemic years",
@@ -1323,7 +1323,7 @@
         "2026": 26
       },
       "fetched_at": "2026-10-11T08:46:12.061851+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Assessing phenotypic correlation through the multivariate phylogenetic latent liability model",
@@ -1346,7 +1346,7 @@
         "2026": 4
       },
       "fetched_at": "2026-10-11T08:46:14.182225+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "An atlas of continuous adaptive evolution in endemic human viruses",
@@ -1361,7 +1361,7 @@
         "2026": 21
       },
       "fetched_at": "2026-10-11T08:46:16.338568+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Gene conversion as a source of nucleotide diversity in Plasmodium falciparum",
@@ -1391,7 +1391,7 @@
         "2026": 1
       },
       "fetched_at": "2026-10-11T08:46:18.465724+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "State-dependent evolutionary models reveal modes of solid tumour growth",
@@ -1406,7 +1406,7 @@
         "2026": 19
       },
       "fetched_at": "2026-10-11T08:46:20.596294+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Positive Selection in CD8+T-Cell Epitopes of Influenza Virus Nucleoprotein Revealed by a Comparative Analysis of Human and Swine Viral Lineages",
@@ -1429,7 +1429,7 @@
         "2026": 7
       },
       "fetched_at": "2026-10-11T08:46:22.724537+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Quantifying evolutionary constraints on B-cell affinity maturation",
@@ -1452,7 +1452,7 @@
         "2026": 2
       },
       "fetched_at": "2026-10-11T08:46:24.846357+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Antigenic drift and subtype interference shape A (H3N2) epidemic dynamics in the United States",
@@ -1467,7 +1467,7 @@
         "2026": 24
       },
       "fetched_at": "2026-10-11T08:46:27.008059+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Age-dependent heterogeneity in the antigenic effects of mutations to influenza hemagglutinin",
@@ -1482,7 +1482,7 @@
         "2026": 25
       },
       "fetched_at": "2026-10-11T08:46:29.131155+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Accelerated rates of intron gain/loss and protein evolution in duplicate genes in human and mouse malaria parasites",
@@ -1509,7 +1509,7 @@
         "2024": 3
       },
       "fetched_at": "2026-10-11T08:46:31.247782+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Year-letter genetic clade naming for SARS-CoV-2 on Nextstrain. org",
@@ -1525,7 +1525,7 @@
         "2024": 2
       },
       "fetched_at": "2026-10-11T08:46:33.379736+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Adaptive evolution and environmental durability jointly structure phylodynamic patterns in avian influenza viruses",
@@ -1549,7 +1549,7 @@
         "2026": 2
       },
       "fetched_at": "2026-10-11T08:46:35.524980+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "High-throughput sequencing-based neutralization assay reveals how repeated vaccinations impact titers to recent human H1N1 influenza strains",
@@ -1563,7 +1563,7 @@
         "2026": 26
       },
       "fetched_at": "2026-10-11T08:46:37.647665+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Explaining the geographical origins of seasonal influenza A (H3N2)",
@@ -1584,7 +1584,7 @@
         "2026": 2
       },
       "fetched_at": "2026-10-11T08:46:39.772737+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "The Seattle Flu Study: a multiarm community-based prospective study protocol for assessing influenza prevalence, transmission and genomic epidemiology",
@@ -1603,7 +1603,7 @@
         "2026": 1
       },
       "fetched_at": "2026-10-11T08:46:41.896936+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Adaptive impact of the chimeric gene Quetzalcoatl in Drosophila melanogaster",
@@ -1628,7 +1628,7 @@
         "2026": 4
       },
       "fetched_at": "2026-10-11T08:46:44.047735+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Quantifying within-host diversity of H5N1 influenza viruses in humans and poultry in Cambodia",
@@ -1646,7 +1646,7 @@
         "2026": 6
       },
       "fetched_at": "2026-10-11T08:46:46.197700+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Evolution and rapid spread of a reassortant A (H3N2) virus that predominated the 2017\u20132018 influenza season",
@@ -1665,7 +1665,7 @@
         "2026": 7
       },
       "fetched_at": "2026-10-11T08:46:48.317852+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Positive selection underlies repeated knockout of ORF8 in SARS-CoV-2 evolution",
@@ -1680,7 +1680,7 @@
         "2026": 15
       },
       "fetched_at": "2026-10-11T08:46:50.438708+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Simultaneously estimating evolutionary history and repeated traits phylogenetic signal: applications to viral and host phenotypic evolution",
@@ -1702,7 +1702,7 @@
         "2025": 1
       },
       "fetched_at": "2026-10-11T08:46:52.567528+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "SwabExpress: an end-to-end protocol for extraction-free COVID-19 testing",
@@ -1719,7 +1719,7 @@
         "2026": 3
       },
       "fetched_at": "2026-10-11T08:46:54.701213+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Limited predictability of amino acid substitutions in seasonal influenza viruses",
@@ -1737,7 +1737,7 @@
         "2026": 5
       },
       "fetched_at": "2026-10-11T08:46:56.824868+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Genomic epidemiology supports multiple introductions and cryptic transmission of Zika virus in Colombia",
@@ -1755,7 +1755,7 @@
         "2026": 6
       },
       "fetched_at": "2026-10-11T08:46:58.956505+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Evaluating specimen quality and results from a community-wide, home-based respiratory surveillance study",
@@ -1772,7 +1772,7 @@
         "2026": 3
       },
       "fetched_at": "2026-10-11T08:47:01.108638+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Real-time analysis and visualization of pathogen sequence data",
@@ -1790,7 +1790,7 @@
         "2026": 3
       },
       "fetched_at": "2026-10-11T08:47:03.275118+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Inferring variant-specific effective reproduction numbers from combined case and sequencing data",
@@ -1806,7 +1806,7 @@
         "2026": 4
       },
       "fetched_at": "2026-10-11T08:47:05.392217+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Fitness models provide accurate short-term forecasts of SARS-CoV-2 variant frequency",
@@ -1820,7 +1820,7 @@
         "2026": 18
       },
       "fetched_at": "2026-10-11T08:47:07.544725+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Time dependence of evolutionary metrics during the 2009 pandemic influenza virus outbreak",
@@ -1843,7 +1843,7 @@
         "2026": 2
       },
       "fetched_at": "2026-10-11T08:47:09.696194+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Overdispersion of the Molecular Clock: Temporal Variation of Gene-Specific Substitution Rates inDrosophila",
@@ -1871,7 +1871,7 @@
         "2026": 1
       },
       "fetched_at": "2026-10-11T08:47:11.843742+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Specific allelic discrimination of N501Y and other SARS\u2010CoV\u20102 mutations by ddPCR detects B. 1.1. 7 lineage in Washington State",
@@ -1888,7 +1888,7 @@
         "2026": 1
       },
       "fetched_at": "2026-10-11T08:47:14.017638+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Massive iatrogenic outbreak of human immunodeficiency virus type 1 in rural Cambodia, 2014\u20132015",
@@ -1907,7 +1907,7 @@
         "2026": 1
       },
       "fetched_at": "2026-10-11T08:47:16.141388+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Effects of weather-related social distancing on city-scale transmission of respiratory viruses: a retrospective cohort study",
@@ -1925,7 +1925,7 @@
         "2026": 2
       },
       "fetched_at": "2026-10-11T08:47:18.280883+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "dms-view: Interactive visualization tool for deep mutational scanning data",
@@ -1942,7 +1942,7 @@
         "2025": 1
       },
       "fetched_at": "2026-10-11T08:47:20.407147+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Early prediction of antigenic transitions for influenza A/H3N2",
@@ -1961,7 +1961,7 @@
         "2026": 2
       },
       "fetched_at": "2026-10-11T08:47:22.525595+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Characterising the epidemic spread of influenza A/H3N2 within a city through phylogenetics",
@@ -1978,7 +1978,7 @@
         "2026": 4
       },
       "fetched_at": "2026-10-11T08:47:24.684864+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Estimating the reproduction number and transmission heterogeneity from the size distribution of clusters of identical pathogen sequences",
@@ -1993,7 +1993,7 @@
         "2026": 9
       },
       "fetched_at": "2026-10-11T08:47:26.813362+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Genomic surveillance of SARS-CoV-2 Omicron variants on a university campus",
@@ -2009,7 +2009,7 @@
         "2026": 4
       },
       "fetched_at": "2026-10-11T08:47:28.944592+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Helicobacter pylori diversification during chronic infection within a single host generates sub-populations with distinct phenotypes",
@@ -2025,7 +2025,7 @@
         "2026": 8
       },
       "fetched_at": "2026-10-11T08:47:31.080057+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "SARS-CoV-2 epidemiology on a public university campus in Washington State",
@@ -2042,7 +2042,7 @@
         "2026": 1
       },
       "fetched_at": "2026-10-11T08:47:33.251005+00:00",
-      "scraped_at": "2026-10-12T17:22:49.848141+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Geography and host species shape the evolutionary dynamics of U genogroup infectious hematopoietic necrosis virus",
@@ -2063,7 +2063,7 @@
         "2026": 5
       },
       "fetched_at": "2026-10-12T17:22:49.971620+00:00",
-      "scraped_at": "2026-10-12T17:22:49.971620+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Incidence of medically attended acute respiratory illnesses due to respiratory viruses across the life course during the 2018/19 influenza season",
@@ -2080,7 +2080,7 @@
         "2026": 4
       },
       "fetched_at": "2026-10-12T17:22:52.117420+00:00",
-      "scraped_at": "2026-10-12T17:22:52.117420+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Repeated introductions and intensive community transmission fueled a mumps virus outbreak in Washington State",
@@ -2097,7 +2097,7 @@
         "2026": 5
       },
       "fetched_at": "2026-10-12T17:22:54.265512+00:00",
-      "scraped_at": "2026-10-12T17:22:54.265512+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Evolvability of Hsp70 Expression under Artificial Selection for Inducible Thermotolerance in Independent Populations ofDrosophila melanogaster",
@@ -2125,7 +2125,7 @@
         "2025": 2
       },
       "fetched_at": "2026-10-12T17:22:56.408845+00:00",
-      "scraped_at": "2026-10-12T17:22:56.408845+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Interactions among 17 respiratory pathogens: a cross-sectional study using clinical and community surveillance data",
@@ -2141,7 +2141,7 @@
         "2026": 3
       },
       "fetched_at": "2026-10-12T17:22:58.564561+00:00",
-      "scraped_at": "2026-10-12T17:22:58.564561+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Remote household observation for noninfluenza respiratory viral illness",
@@ -2158,7 +2158,7 @@
         "2026": 2
       },
       "fetched_at": "2026-10-12T17:23:00.725115+00:00",
-      "scraped_at": "2026-10-12T17:23:00.725115+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Overdispersion of the molecular clock varies between yeast, Drosophila and mammals",
@@ -2183,7 +2183,7 @@
         "2026": 2
       },
       "fetched_at": "2026-10-12T17:23:02.858538+00:00",
-      "scraped_at": "2026-10-12T17:23:02.858538+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "High-throughput neutralization measurements correlate strongly with evolutionary success of human influenza strains",
@@ -2196,7 +2196,7 @@
         "2026": 16
       },
       "fetched_at": "2026-10-12T17:23:05.015769+00:00",
-      "scraped_at": "2026-10-12T17:23:05.015769+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Diagnostic accuracy of an at-home, rapid self-test for influenza: prospective comparative accuracy study",
@@ -2212,7 +2212,7 @@
         "2026": 3
       },
       "fetched_at": "2026-10-12T17:23:07.178196+00:00",
-      "scraped_at": "2026-10-12T17:23:07.178196+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Local-scale phylodynamics reveal differential community impact of SARS-CoV-2 in a metropolitan US county",
@@ -2227,7 +2227,7 @@
         "2026": 5
       },
       "fetched_at": "2026-10-12T17:23:09.338503+00:00",
-      "scraped_at": "2026-10-12T17:23:09.338503+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Sentinel surveillance system implementation and evaluation for SARS-CoV-2 genomic data, Washington, USA, 2020\u20132021",
@@ -2242,7 +2242,7 @@
         "2026": 5
       },
       "fetched_at": "2026-10-12T17:23:11.496005+00:00",
-      "scraped_at": "2026-10-12T17:23:11.496005+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Nomenclature for tracking of genetic variation of seasonal influenza viruses",
@@ -2255,7 +2255,7 @@
         "2026": 17
       },
       "fetched_at": "2026-10-12T17:23:13.707633+00:00",
-      "scraped_at": "2026-10-12T17:23:13.707633+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Trends in risk factors and symptoms associated with SARS-CoV-2 and rhinovirus test positivity in King County, Washington, June 2020 to July 2022",
@@ -2270,7 +2270,7 @@
         "2026": 3
       },
       "fetched_at": "2026-10-12T17:23:15.872186+00:00",
-      "scraped_at": "2026-10-12T17:23:15.872186+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Cross-Sectional Prevalence of SARS-CoV-2 Among Skilled Nursing Facility Employees and Residents Across Facilities in Seattle: Weil et al.",
@@ -2287,7 +2287,7 @@
         "2025": 1
       },
       "fetched_at": "2026-10-12T17:23:18.055099+00:00",
-      "scraped_at": "2026-10-12T17:23:18.055099+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Seasonality in the migration and establishment of H3N2 Influenza lineages with epidemic growth and decline",
@@ -2308,7 +2308,7 @@
         "2026": 1
       },
       "fetched_at": "2026-10-12T17:23:20.209693+00:00",
-      "scraped_at": "2026-10-12T17:23:20.209693+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Timely vaccine strain selection and genomic surveillance improve evolutionary forecast accuracy of seasonal influenza A/H3N2",
@@ -2321,7 +2321,7 @@
         "2026": 10
       },
       "fetched_at": "2026-10-12T17:23:22.431682+00:00",
-      "scraped_at": "2026-10-12T17:23:22.431682+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Fine-scale patterns of SARS-CoV-2 spread from identical pathogen sequences",
@@ -2334,7 +2334,7 @@
         "2026": 10
       },
       "fetched_at": "2026-10-12T17:23:24.618930+00:00",
-      "scraped_at": "2026-10-12T17:23:24.618930+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "A remote household\u2010based approach to influenza self\u2010testing and antiviral treatment",
@@ -2350,7 +2350,7 @@
         "2026": 3
       },
       "fetched_at": "2026-10-12T17:23:27.132372+00:00",
-      "scraped_at": "2026-10-12T17:23:27.132372+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Estimating vaccine-driven selection in seasonal influenza",
@@ -2370,7 +2370,7 @@
         "2026": 2
       },
       "fetched_at": "2026-10-12T17:23:29.285521+00:00",
-      "scraped_at": "2026-10-12T17:23:29.285521+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Genomic heterogeneity in the density of noncoding single-nucleotide and microsatellite polymorphisms in Plasmodium falciparum",
@@ -2390,7 +2390,7 @@
         "2026": 1
       },
       "fetched_at": "2026-10-12T17:23:31.421379+00:00",
-      "scraped_at": "2026-10-12T17:23:31.421379+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Seasonal influenza circulation patterns and projections for February 2024 to February 2025",
@@ -2404,7 +2404,7 @@
         "2026": 4
       },
       "fetched_at": "2026-10-12T17:23:33.566627+00:00",
-      "scraped_at": "2026-10-12T17:23:33.566627+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "CpG-creating mutations are costly in many human viruses",
@@ -2421,7 +2421,7 @@
         "2025": 1
       },
       "fetched_at": "2026-10-12T17:23:35.710139+00:00",
-      "scraped_at": "2026-10-12T17:23:35.710139+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "MASCOT-Skyline integrates population and migration dynamics to enhance phylogeographic reconstructions",
@@ -2435,7 +2435,7 @@
         "2026": 8
       },
       "fetched_at": "2026-10-12T17:23:37.843444+00:00",
-      "scraped_at": "2026-10-12T17:23:37.843444+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Near real-time data on the human neutralizing antibody landscape to influenza virus to inform vaccine-strain selection in September 2025",
@@ -2448,7 +2448,7 @@
         "2026": 11
       },
       "fetched_at": "2026-10-12T17:23:39.982093+00:00",
-      "scraped_at": "2026-10-12T17:23:39.982093+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "LB21. The seattle flu study: a community-based study of influenza",
@@ -2464,7 +2464,7 @@
         "2024": 1
       },
       "fetched_at": "2026-10-12T17:23:42.116792+00:00",
-      "scraped_at": "2026-10-12T17:23:42.116792+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Did a single amino acid change make Ebola virus more virulent?",
@@ -2481,7 +2481,7 @@
         "2026": 1
       },
       "fetched_at": "2026-10-12T17:23:44.250727+00:00",
-      "scraped_at": "2026-10-12T17:23:44.250727+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Phylowood: interactive web-based animations of biogeographic and phylogeographic histories",
@@ -2498,7 +2498,7 @@
         "2023": 1
       },
       "fetched_at": "2026-10-12T17:23:46.379640+00:00",
-      "scraped_at": "2026-10-12T17:23:46.379640+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Integrating dynamical modeling and phylogeographic inference to characterize global influenza circulation",
@@ -2512,7 +2512,7 @@
         "2026": 6
       },
       "fetched_at": "2026-10-12T17:23:48.517015+00:00",
-      "scraped_at": "2026-10-12T17:23:48.517015+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Tracing the Origin, Spread, and Molecular Evolution of Zika Virus in Puerto Rico, 2016\u20132017",
@@ -2527,7 +2527,7 @@
         "2026": 2
       },
       "fetched_at": "2026-10-12T17:23:50.650251+00:00",
-      "scraped_at": "2026-10-12T17:23:50.650251+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Seattle Flu Study-Swab and Send: Study protocol for at-home surveillance methods to estimate the burden of respiratory pathogens on a City-Wide Scale",
@@ -2542,7 +2542,7 @@
         "2023": 2
       },
       "fetched_at": "2026-10-12T17:23:52.801911+00:00",
-      "scraped_at": "2026-10-12T17:23:52.801911+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Fitting stochastic epidemic models to gene genealogies using linear noise approximation",
@@ -2557,7 +2557,7 @@
         "2025": 3
       },
       "fetched_at": "2026-10-12T17:23:54.941693+00:00",
-      "scraped_at": "2026-10-12T17:23:54.941693+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Seasonal influenza circulation patterns and projections for Feb 2018 to Feb 2019",
@@ -2572,7 +2572,7 @@
         "2025": 1
       },
       "fetched_at": "2026-10-12T17:23:57.069207+00:00",
-      "scraped_at": "2026-10-12T17:23:57.069207+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Epidemiological and evolutionary analysis of the 2014 Ebola virus outbreak",
@@ -2587,7 +2587,7 @@
         "2022": 1
       },
       "fetched_at": "2026-10-12T17:23:59.202218+00:00",
-      "scraped_at": "2026-10-12T17:23:59.202218+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Joint visualization of seasonal influenza serology and phylogeny to inform vaccine composition",
@@ -2602,7 +2602,7 @@
         "2026": 2
       },
       "fetched_at": "2026-10-12T17:24:01.332243+00:00",
-      "scraped_at": "2026-10-12T17:24:01.332243+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Changing genomic epidemiology of COVID-19 in long-term care facilities during the 2020\u20132022 pandemic, Washington State",
@@ -2616,7 +2616,7 @@
         "2026": 3
       },
       "fetched_at": "2026-10-12T17:24:03.443145+00:00",
-      "scraped_at": "2026-10-12T17:24:03.443145+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Bayesian nonparametric clustering in phylogenetics: modeling antigenic evolution in influenza",
@@ -2632,7 +2632,7 @@
         "2025": 1
       },
       "fetched_at": "2026-10-12T17:24:05.572032+00:00",
-      "scraped_at": "2026-10-12T17:24:05.572032+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Clinical and Genomic Epidemiology of Coxsackievirus A21 and Enterovirus D68 in Homeless Shelters, King County, Washington, USA, 2019\u20132021",
@@ -2645,7 +2645,7 @@
         "2026": 5
       },
       "fetched_at": "2026-10-12T17:24:07.694583+00:00",
-      "scraped_at": "2026-10-12T17:24:07.694583+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Comparative diagnostic utility of SARS-CoV-2 rapid antigen and molecular testing in a community setting",
@@ -2659,7 +2659,7 @@
         "2026": 3
       },
       "fetched_at": "2026-10-12T17:24:09.824414+00:00",
-      "scraped_at": "2026-10-12T17:24:09.824414+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Dimensionality reduction distills complex evolutionary relationships in seasonal influenza and SARS-CoV-2",
@@ -2672,7 +2672,7 @@
         "2026": 4
       },
       "fetched_at": "2026-10-12T17:24:11.997932+00:00",
-      "scraped_at": "2026-10-12T17:24:11.997932+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Seasonal influenza circulation patterns and projections for September 2019 to September 2020",
@@ -2686,7 +2686,7 @@
         "2024": 1
       },
       "fetched_at": "2026-10-12T17:24:14.133224+00:00",
-      "scraped_at": "2026-10-12T17:24:14.133224+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Seasonal influenza circulation patterns and projections for Sep 2017 to Sep 2018",
@@ -2702,7 +2702,7 @@
         "2024": 1
       },
       "fetched_at": "2026-10-12T17:24:16.288659+00:00",
-      "scraped_at": "2026-10-12T17:24:16.288659+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Near real-time data on the human neutralizing antibody landscape to influenza virus as of early 2026 to inform vaccine-strain selection",
@@ -2714,7 +2714,7 @@
         "2026": 5
       },
       "fetched_at": "2026-10-12T17:24:18.471533+00:00",
-      "scraped_at": "2026-10-12T17:24:18.471533+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Seasonal influenza viruses show distinct adaptive dynamics during growth in chicken eggs",
@@ -2726,7 +2726,7 @@
         "2026": 6
       },
       "fetched_at": "2026-10-12T17:24:20.627421+00:00",
-      "scraped_at": "2026-10-12T17:24:20.627421+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Nonparametric Bayesian grouping methods for spatial time-series data",
@@ -2741,7 +2741,7 @@
         "2017": 1
       },
       "fetched_at": "2026-10-12T17:24:22.770548+00:00",
-      "scraped_at": "2026-10-12T17:24:22.770548+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Quantifying plasmid movement in drug-resistantShigellaspecies using phylodynamic inference",
@@ -2755,7 +2755,7 @@
         "2026": 3
       },
       "fetched_at": "2026-10-12T17:24:24.923104+00:00",
-      "scraped_at": "2026-10-12T17:24:24.923104+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Viral genome sequencing places White House COVID-19 outbreak into phylogenetic context",
@@ -2770,7 +2770,7 @@
         "2025": 1
       },
       "fetched_at": "2026-10-12T17:24:27.049692+00:00",
-      "scraped_at": "2026-10-12T17:24:27.049692+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Genetic characterization of the Zika virus epidemic in the US Virgin Islands",
@@ -2785,7 +2785,7 @@
         "2022": 1
       },
       "fetched_at": "2026-10-12T17:24:29.178491+00:00",
-      "scraped_at": "2026-10-12T17:24:29.178491+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "The hidden history of HIV-1: Establishment and early spread of the AIDS pandemic",
@@ -2799,7 +2799,7 @@
         "2017": 1
       },
       "fetched_at": "2026-10-12T17:24:31.326282+00:00",
-      "scraped_at": "2026-10-12T17:24:31.326282+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Genomic analysis of nCoV spread. Situation report 2020-01-23.",
@@ -2811,7 +2811,7 @@
         "2020": 4
       },
       "fetched_at": "2026-10-12T17:24:33.470476+00:00",
-      "scraped_at": "2026-10-12T17:24:33.470476+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "HIV epidemiology",
@@ -2825,7 +2825,7 @@
         "2021": 1
       },
       "fetched_at": "2026-10-12T17:24:35.609378+00:00",
-      "scraped_at": "2026-10-12T17:24:35.609378+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Viral introductions and return to baseline sexual behaviors maintain low-level mpox incidence in Los Angeles",
@@ -2837,7 +2837,7 @@
         "2026": 3
       },
       "fetched_at": "2026-10-12T17:24:37.746402+00:00",
-      "scraped_at": "2026-10-12T17:24:37.746402+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Frequency dynamics predict viral fitness, antigenic relationships and epidemic growth",
@@ -2849,7 +2849,7 @@
         "2026": 3
       },
       "fetched_at": "2026-10-12T17:24:39.897142+00:00",
-      "scraped_at": "2026-10-12T17:24:39.897142+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "SARS-CoV-2 diversity and transmission on a university campus across two academic years during the pandemic",
@@ -2862,7 +2862,7 @@
         "2026": 2
       },
       "fetched_at": "2026-10-12T17:24:42.025931+00:00",
-      "scraped_at": "2026-10-12T17:24:42.025931+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "High-resolution influenza mapping of a city reveals socioeconomic determinants of transmission within and between urban quarters",
@@ -2876,7 +2876,7 @@
         "2022": 1
       },
       "fetched_at": "2026-10-12T17:24:44.154550+00:00",
-      "scraped_at": "2026-10-12T17:24:44.154550+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Clustered mutations at the murine and human IgH locus exhibit significant linkage consistent with templated mutagenesis",
@@ -2890,7 +2890,7 @@
         "2024": 1
       },
       "fetched_at": "2026-10-12T17:24:46.280712+00:00",
-      "scraped_at": "2026-10-12T17:24:46.280712+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Strain-specific differences in the response to egg-derived versus recombinant protein influenza vaccines",
@@ -2902,7 +2902,7 @@
         "2026": 2
       },
       "fetched_at": "2026-10-12T17:24:48.416260+00:00",
-      "scraped_at": "2026-10-12T17:24:48.416260+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Nextstrain automates real-time phylodynamic analysis of open data for endemic and emerging pathogens",
@@ -2914,7 +2914,7 @@
         "2026": 2
       },
       "fetched_at": "2026-10-12T17:24:50.552498+00:00",
-      "scraped_at": "2026-10-12T17:24:50.552498+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Author Correction: Positive selection underlies repeated knockout of ORF8 in SARS-CoV-2 evolution",
@@ -2927,7 +2927,7 @@
         "2026": 1
       },
       "fetched_at": "2026-10-12T17:24:52.701514+00:00",
-      "scraped_at": "2026-10-12T17:24:52.701514+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Correction: evidence for adaptive evolution in the receptor-binding domain of seasonal coronaviruses OC43 and 229e",
@@ -2940,7 +2940,7 @@
         "2024": 1
       },
       "fetched_at": "2026-10-12T17:24:54.849374+00:00",
-      "scraped_at": "2026-10-12T17:24:54.849374+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "antigen-prime: Simulating coupled genetic and antigenic evolution of influenza virus",
@@ -2952,7 +2952,7 @@
         "2026": 1
       },
       "fetched_at": "2026-10-12T17:24:56.984494+00:00",
-      "scraped_at": "2026-10-12T17:24:56.984494+00:00"
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Phylogenetics Nextstrain automates real-time phylogenetic analysis of open data for endemic and emerging pathogens",
@@ -2961,7 +2961,8 @@
       "total_citations": 0,
       "listed_citations": 0,
       "citations_by_year": {},
-      "scraped_at": "2026-10-12T17:22:49.850490+00:00"
+      "fetched_at": "2026-10-12T17:22:49.850490+00:00",
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Collaborative estimation and evaluation of SARS-CoV-2 variant nowcasting in the United States",
@@ -2970,7 +2971,8 @@
       "total_citations": 0,
       "listed_citations": 0,
       "citations_by_year": {},
-      "scraped_at": "2026-10-12T17:22:49.850495+00:00"
+      "fetched_at": "2026-10-12T17:22:49.850495+00:00",
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Characterizing the informativeness of pathogen genome sequence datasets about transmission between population groups",
@@ -2979,7 +2981,8 @@
       "total_citations": 0,
       "listed_citations": 0,
       "citations_by_year": {},
-      "scraped_at": "2026-10-12T17:22:49.850496+00:00"
+      "fetched_at": "2026-10-12T17:22:49.850496+00:00",
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Hidden Markov models detect recombination and ancestry of SARS-CoV-2",
@@ -2988,7 +2991,8 @@
       "total_citations": 0,
       "listed_citations": 0,
       "citations_by_year": {},
-      "scraped_at": "2026-10-12T17:22:49.850497+00:00"
+      "fetched_at": "2026-10-12T17:22:49.850497+00:00",
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Fitness flux in SARS-CoV-2 and influenza H3N2",
@@ -2997,7 +3001,8 @@
       "total_citations": 0,
       "listed_citations": 0,
       "citations_by_year": {},
-      "scraped_at": "2026-10-12T17:22:49.850498+00:00"
+      "fetched_at": "2026-10-12T17:22:49.850498+00:00",
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "SARS-CoV-2 saltational events are recurrent and trace to persistent human infections",
@@ -3006,7 +3011,8 @@
       "total_citations": 0,
       "listed_citations": 0,
       "citations_by_year": {},
-      "scraped_at": "2026-10-12T17:22:49.850499+00:00"
+      "fetched_at": "2026-10-12T17:22:49.850499+00:00",
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "BEFORE THE FLOOD",
@@ -3015,7 +3021,8 @@
       "total_citations": 0,
       "listed_citations": 0,
       "citations_by_year": {},
-      "scraped_at": "2026-10-12T17:22:49.850500+00:00"
+      "fetched_at": "2026-10-12T17:22:49.850500+00:00",
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Data from: The early spread and epidemic ignition of HIV-1 in human populations",
@@ -3024,7 +3031,8 @@
       "total_citations": 0,
       "listed_citations": 0,
       "citations_by_year": {},
-      "scraped_at": "2026-10-12T17:22:49.850501+00:00"
+      "fetched_at": "2026-10-12T17:22:49.850501+00:00",
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Data from: adaptive evolution and environmental durability jointly structure phylodynamic patterns in avian influenza viruses",
@@ -3033,7 +3041,8 @@
       "total_citations": 0,
       "listed_citations": 0,
       "citations_by_year": {},
-      "scraped_at": "2026-10-12T17:22:49.850501+00:00"
+      "fetched_at": "2026-10-12T17:22:49.850501+00:00",
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Dissecting the clinical significance of evolving pathogen diversity Cassia Wagner A dissertation",
@@ -3042,7 +3051,8 @@
       "total_citations": 0,
       "listed_citations": 0,
       "citations_by_year": {},
-      "scraped_at": "2026-10-12T17:22:49.850502+00:00"
+      "fetched_at": "2026-10-12T17:22:49.850502+00:00",
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Signatures of adaptive evolution in the genetic sequences of human pathogenic RNA viruses Kathryn E. Kistler A dissertation",
@@ -3051,7 +3061,8 @@
       "total_citations": 0,
       "listed_citations": 0,
       "citations_by_year": {},
-      "scraped_at": "2026-10-12T17:22:49.850503+00:00"
+      "fetched_at": "2026-10-12T17:22:49.850503+00:00",
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Katherine S. Xue",
@@ -3060,7 +3071,8 @@
       "total_citations": 0,
       "listed_citations": 0,
       "citations_by_year": {},
-      "scraped_at": "2026-10-12T17:22:49.850504+00:00"
+      "fetched_at": "2026-10-12T17:22:49.850504+00:00",
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Supplementary information for: Characterizing the informativeness of pathogen genome sequence datasets about transmission between population groups",
@@ -3069,7 +3081,8 @@
       "total_citations": 0,
       "listed_citations": 0,
       "citations_by_year": {},
-      "scraped_at": "2026-10-12T17:22:49.850505+00:00"
+      "fetched_at": "2026-10-12T17:22:49.850505+00:00",
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "Hidden Markov models detect recombination and ancestry of",
@@ -3078,7 +3091,8 @@
       "total_citations": 0,
       "listed_citations": 0,
       "citations_by_year": {},
-      "scraped_at": "2026-10-12T17:22:49.850506+00:00"
+      "fetched_at": "2026-10-12T17:22:49.850506+00:00",
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     },
     {
       "title": "ChrisgKent/hbv-fieldbioinfomatics: 1.4",
@@ -3087,7 +3101,8 @@
       "total_citations": 0,
       "listed_citations": 0,
       "citations_by_year": {},
-      "scraped_at": "2026-10-12T17:22:49.850506+00:00"
+      "fetched_at": "2026-10-12T17:22:49.850506+00:00",
+      "scraped_at": "2026-10-12T18:18:45.546004+00:00"
     }
   ]
 }
