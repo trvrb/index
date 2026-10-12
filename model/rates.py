@@ -1,7 +1,7 @@
 """CLI for citation rate analysis using a Poisson state-space model.
 
 Usage:
-    python -m model.rates --input results/citations.json --output data/citation_rates.json
+    python -m model.rates --input data/citations.json --output data/citation_rates.json
 """
 
 from __future__ import annotations
@@ -94,8 +94,8 @@ def main() -> None:
     parser.add_argument(
         "--input",
         "-i",
-        default="results/citations.json",
-        help="Path to citations.json (default: results/citations.json)",
+        default="data/citations.json",
+        help="Path to citations.json (default: data/citations.json)",
     )
     parser.add_argument(
         "--output",

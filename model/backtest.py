@@ -4,7 +4,7 @@ For each origin year, truncates the data at that year, refits the model, and
 scores predictions of each paper's citations in the following full years.
 
 Usage:
-    python -m model.backtest --input results/citations.json
+    python -m model.backtest --input data/citations.json
 """
 
 from __future__ import annotations
@@ -154,8 +154,8 @@ def main() -> None:
     parser.add_argument(
         "--input",
         "-i",
-        default="results/citations.json",
-        help="Path to citations.json (default: results/citations.json)",
+        default="data/citations.json",
+        help="Path to citations.json (default: data/citations.json)",
     )
     parser.add_argument(
         "--origins",

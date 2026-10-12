@@ -8,6 +8,10 @@ from pathlib import Path
 DEFAULT_CONFIG = {
     "user_id": "RIi-1pAAAAAJ",
     "request_delay": 2,
+    "max_requests": 80,
+    "max_retries": 5,
+    "refresh_per_run": 10,
+    "refresh_after_days": 90,
 }
 
 

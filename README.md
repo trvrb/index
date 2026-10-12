@@ -18,13 +18,29 @@ pip install -r requirements.txt
 
 ## Usage
 
+### Automated weekly updates
+
+A GitHub Actions workflow (`.github/workflows/update.yml`) does the whole update: it scrapes Scholar for papers whose counts changed, refits the model, commits `data/citations.json` and `data/citation_rates.json` to `main` as `github-actions[bot]`, and requests a Pages build. Pushes made with the workflow's token don't rebuild Pages on their own.
+
+```bash
+gh workflow run update.yml                    # dry run: results uploaded as an artifact, nothing committed
+gh workflow run update.yml -f dry_run=false   # update the site now
+```
+
+Once the weekly schedule is enabled in the workflow, it runs every Monday:
+
+- **Request budget:** each run makes at most 80 requests and stops at the first sign of rate limiting, keeping what it fetched. Papers left pending go first next week.
+- **Notifications:** a run fails, and GitHub emails you, if the paper list can't be fetched or a paper has been pending for more than 18 days.
+- **Who writes `data/`:** the bot is the normal writer. If you run the scraper locally, `git pull` first and push promptly. For experiments, write elsewhere with `-o results/citations.json`.
+
 ### 1. Scrape citation data from Google Scholar
 
-Configure your Google Scholar user ID in `config.yaml`:
+Configure your Google Scholar user ID and request limits in `config.yaml`:
 
 ```yaml
 user_id: RIi-1pAAAAAJ
 request_delay: 2
+max_requests: 80
 ```
 
 Run the scraper:
@@ -34,18 +50,20 @@ python -m ingest            # update papers whose citation counts changed
 python -m ingest --refresh  # re-fetch every paper
 ```
 
-Output: `results/citations.json` with each paper's publication year, total citations and citations per year, plus the profile's summary stats.
+Output: `data/citations.json` with each paper's publication year, total citations and citations per year, plus the profile's summary stats. It's tracked in git, so the next run (local or automated) knows what changed.
 
 Scholar rate-limits after about 100 requests, so the scraper avoids requests it doesn't need:
 
-- **Every run fetches the paper list** (about 9 requests). The list shows each paper's "Cited by" count.
+- **Every run fetches the paper list** (2 requests, 100 papers per page). The list shows each paper's "Cited by" count.
 - **Detail pages are fetched only when needed:** for new papers and papers whose count changed. Unchanged papers are marked current as of now. Uncited papers need no request.
 - **Order:** changed papers are fetched largest change first.
-- **Interruptions:** if Scholar rate-limits you, progress is saved and existing data is kept. Re-run `python -m ingest` to continue.
-- **`--refresh`:** Scholar occasionally moves a citation between years without changing a paper's total, which change detection can't see. `--refresh` re-fetches every paper and is resumable the same way. The scraper suggests running it when papers haven't been fetched in 180 days.
+- **Budget and interruptions:** a run stops at `max_requests`, or when Scholar rate-limits it, keeping existing data and everything fetched so far. Re-run `python -m ingest` to continue.
+- **Rolling refresh:** Scholar occasionally moves a citation between years without changing a paper's total, which change detection can't see. Each run also re-fetches up to 10 papers whose detail pages are more than 90 days old (`refresh_per_run`, `refresh_after_days`).
+- **`--refresh`** re-fetches every paper, resumable the same way.
+- **Block pages:** Google sometimes serves its CAPTCHA page with a normal status. The scraper treats it as a rate limit and never overwrites a paper with an empty page.
 - **Model warnings:** `python -m model.rates` warns when stored counts are behind Scholar's.
 
-**Note:** The scraper uses browser cookies for authentication. You must be logged into Google in Chrome, Firefox, or Safari.
+Other options: `--max-requests`, `--max-retries` (attempts per page when rate limited), `--delay` (seconds between requests), and `--no-cookies`. Without `--no-cookies`, the scraper loads your Google cookies from Chrome, Firefox or Safari if it can. Cookies aren't required for public profiles.
 
 ### 2. Estimate citation rates and forecasts
 
@@ -53,7 +71,7 @@ Scholar rate-limits after about 100 requests, so the scraper avoids requests it 
 python -m model.rates
 ```
 
-This reads `results/citations.json`, fits the model hyperparameters by maximum marginal likelihood (a few seconds), and writes `data/citation_rates.json`, which the visualization reads. Options:
+This reads `data/citations.json`, fits the model hyperparameters by maximum marginal likelihood (a few seconds), and writes `data/citation_rates.json`, which the visualization reads. Options:
 
 - `--forecast-lead YEARS`: forecast through the last year-end within this many years of the scrape date (default 1.5). Before July that's the end of the current year; from July on, the end of next year.
 - `--params FILE`: use fixed hyperparameters from `model.tune` instead of fitting
@@ -98,7 +116,10 @@ index/
 ├── app.js              # D3.js visualization code
 ├── styles.css          # Styling
 ├── data/
+│   ├── citations.json       # Scrape state: per-paper citation histograms
 │   └── citation_rates.json  # Model output for GitHub Pages
+├── .github/workflows/
+│   └── update.yml      # Weekly scrape, model and commit
 ├── results/            # Local working outputs (gitignored)
 ├── ingest/             # Google Scholar scraper
 ├── model/
@@ -144,6 +165,7 @@ Scholar omits years with zero citations from `citations_by_year`; the model trea
 - `fetched_at` is when the detail page was last fetched.
 - `scraped_at` is when the counts were last confirmed current. Exposure for the current year is computed from it.
 - Papers with a change on Scholar that hasn't been fetched yet carry `"stale": true`.
+- Papers that have never been scraped carry `first_seen`, the time they first appeared on the profile.
 
 ### citation_rates.json
 

@@ -144,6 +144,19 @@ from their joint Laplace posterior, jointly across papers, then:
      dated histogram, about 1.4%). This makes the "to date" values match Scholar's profile, and
      keeps projections from falling below them.
 
+## Data updates
+
+`data/citations.json` is updated weekly by a GitHub Actions workflow. Detail pages are fetched
+only for papers whose listed citation count changed. Each run also re-fetches up to 10 papers
+whose pages are more than 90 days old, because Scholar sometimes moves citations between years
+without changing a paper's total. Of 421 paper-snapshots with unchanged totals, 58 had their
+histograms shift, by ±1–2 citations.
+
+**Known bias.** A paper still pending from December, whose change wasn't fetched before the
+year ended, keeps its old histogram until it's fetched. Meanwhile its new-year column gets the
+whole run's exposure, so its rate is briefly underestimated. Pending papers go first in the next
+run.
+
 ## Backtest
 
 `python -m model.backtest` uses rolling origins (2020–2024 by default):

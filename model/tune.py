@@ -6,7 +6,7 @@ Laplace-approximate marginal likelihood summed across all papers, with the
 momentum persistence rho held fixed.
 
 Usage:
-    python -m model.tune --input results/citations.json --output results/tuned_params.json
+    python -m model.tune --input data/citations.json --output results/tuned_params.json
 """
 
 from __future__ import annotations
@@ -109,8 +109,8 @@ def main() -> None:
     parser.add_argument(
         "--input",
         "-i",
-        default="results/citations.json",
-        help="Path to citations.json (default: results/citations.json)",
+        default="data/citations.json",
+        help="Path to citations.json (default: data/citations.json)",
     )
     parser.add_argument(
         "--output",

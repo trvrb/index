@@ -1,6 +1,6 @@
 """Progress file handling.
 
-The progress file (results/citations.json) keeps every paper's latest
+The progress file (data/citations.json) keeps every paper's latest
 citation histogram. Each run re-fetches the profile's paper list, which shows
 every paper's "Cited by" count, and only re-fetches detail pages for papers
 whose count changed. Data is never cleared before it's replaced, so an
@@ -12,10 +12,11 @@ Per-paper fields:
     fetched_at: when the detail page was last fetched
     scraped_at: time through which the histogram is known to be current
     stale: true when the list shows a change that hasn't been fetched yet
+    first_seen: when a never-scraped paper first appeared on the profile
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -150,6 +151,9 @@ def merge_paper_list(
                 paper["stale"] = True
             else:
                 paper["scraped_at"] = now
+        else:
+            # Lets the health check measure how long a new paper has waited
+            paper["first_seen"] = old.get("first_seen") or now
         papers.append(paper)
 
     n_new = sum(1 for e in paper_list if e["citation_id"] not in existing)
@@ -191,6 +195,48 @@ def papers_to_fetch(data: dict, list_counts: dict[str, Optional[int]]) -> list[i
     return sorted(pending, key=priority)
 
 
+def papers_to_refresh(
+    data: dict,
+    list_counts: dict[str, Optional[int]],
+    older_than_days: float,
+    max_papers: int,
+) -> list[int]:
+    """Indices of up-to-date papers whose detail pages are due for a re-fetch.
+
+    Scholar sometimes moves citations between years without changing a
+    paper's total, which change detection can't see. Re-fetching a few of the
+    oldest pages each run keeps every histogram fresh. Uncited papers are
+    skipped, since they have no histogram to drift.
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(days=older_than_days)
+    due = []
+    for i, paper in enumerate(data["papers"]):
+        fetched_at = paper.get("fetched_at")
+        if is_pending(paper) or not fetched_at or not list_counts.get(paper["citation_id"]):
+            continue
+        if datetime.fromisoformat(fetched_at) < cutoff:
+            due.append(i)
+    due.sort(key=lambda i: data["papers"][i]["fetched_at"])
+    return due[:max_papers]
+
+
+def oldest_pending_days(data: dict) -> float:
+    """Days the longest-waiting pending paper has gone without an update.
+
+    Stale papers are measured from when their counts were last current, and
+    never-scraped papers from when they first appeared on the profile.
+    """
+    now = datetime.now(timezone.utc)
+    ages = []
+    for paper in data["papers"]:
+        if not is_pending(paper):
+            continue
+        since = paper.get("scraped_at") if paper.get("citations_by_year") is not None else paper.get("first_seen")
+        if since:
+            ages.append((now - datetime.fromisoformat(since)).total_seconds() / 86400)
+    return max(ages, default=0.0)
+
+
 def record_uncited(data: dict, index: int) -> None:
     """Record a paper the list shows as uncited, without fetching its page."""
     paper = data["papers"][index]
@@ -199,6 +245,7 @@ def record_uncited(data: dict, index: int) -> None:
     paper["citations_by_year"] = {}
     paper["scraped_at"] = _now()
     paper.pop("stale", None)
+    paper.pop("first_seen", None)
 
 
 def update_paper_progress(
@@ -227,6 +274,7 @@ def update_paper_progress(
     entry["fetched_at"] = now
     entry["scraped_at"] = now
     entry.pop("stale", None)
+    entry.pop("first_seen", None)
     if entry.get("pub_year") is None and paper.pub_year is not None:
         entry["pub_year"] = paper.pub_year
     data["scraped_at"] = now

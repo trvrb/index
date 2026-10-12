@@ -3,3 +3,14 @@ user_id: RIi-1pAAAAAJ
 
 # Seconds to wait between requests to avoid rate limiting
 request_delay: 2
+
+# Most requests to make in one run; Scholar blocks after roughly 100
+max_requests: 80
+
+# Attempts per page when rate limited (1 stops at the first block)
+max_retries: 5
+
+# Each run also re-fetches up to this many papers whose detail pages are older
+# than refresh_after_days, to catch citations Scholar moves between years
+refresh_per_run: 10
+refresh_after_days: 90

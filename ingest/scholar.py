@@ -59,19 +59,57 @@ class RateLimitError(Exception):
     pass
 
 
-def fetch_with_retry(url: str, max_retries: int = 5, base_delay: float = 10, verbose: bool = True) -> requests.Response:
-    """Fetch URL with exponential backoff on 429 errors."""
+class BudgetExhausted(Exception):
+    """Raised when this run's request budget is used up."""
+
+
+class UnexpectedPageError(Exception):
+    """Raised when a page isn't the Scholar page we asked for."""
+
+
+@dataclass
+class RequestSettings:
+    """Limits on requests to Scholar for one run."""
+
+    max_requests: Optional[int] = None  # None for no limit
+    max_retries: int = 5  # attempts per page; 1 stops at the first block
+    timeout: float = 30  # seconds per request
+    used: int = 0  # requests made so far, including retries
+
+
+settings = RequestSettings()
+
+
+def _get(url: str) -> requests.Response:
+    """Make one request, counting it against the budget."""
+    if settings.max_requests is not None and settings.used >= settings.max_requests:
+        raise BudgetExhausted(f"used all {settings.max_requests} requests for this run")
+    settings.used += 1
+    return session.get(url, timeout=settings.timeout)
+
+
+def _is_blocked(response: requests.Response) -> bool:
+    """Whether Scholar answered with a rate limit or CAPTCHA instead of the page."""
+    if response.status_code == 429 or "/sorry/" in response.url:
+        return True
+    # Google sometimes serves its CAPTCHA page with status 200
+    text = response.text
+    return "gs_captcha" in text or "unusual traffic" in text.lower()
+
+
+def fetch_with_retry(url: str, base_delay: float = 10, verbose: bool = True) -> requests.Response:
+    """Fetch URL with exponential backoff when rate limited."""
     if verbose:
         print(f"  Fetching: {url}")
 
+    max_retries = settings.max_retries
     for attempt in range(max_retries):
-        response = session.get(url)
+        response = _get(url)
 
         if verbose:
             print(f"  Response: status={response.status_code}, url={response.url[:80]}...")
 
-        # Check for rate limiting (429 or redirect to /sorry CAPTCHA page)
-        if response.status_code == 429 or "/sorry/" in response.url:
+        if _is_blocked(response):
             if attempt < max_retries - 1:
                 wait_time = base_delay * (2 ** attempt)
                 print(f"  Rate limited, waiting {wait_time}s before retry ({attempt + 1}/{max_retries})...")
@@ -156,7 +194,7 @@ def fetch_paper_list(user_id: str, delay: float = 5) -> tuple[list[dict], Option
     papers = []
     profile = None
     start = 0
-    page_size = 20  # Use smaller page size to reduce rate limiting
+    page_size = 100  # Scholar's maximum, so a typical profile takes two requests
 
     while True:
         url = f"{BASE_URL}/citations?user={user_id}&hl=en&cstart={start}&pagesize={page_size}"
@@ -206,6 +244,10 @@ def fetch_paper_citations(user_id: str, citation_id: str) -> Paper:
 
     Returns:
         Paper object with title, total citations, and yearly breakdown.
+
+    Raises:
+        UnexpectedPageError: if the response isn't a paper page (e.g. a
+            block page), so stored data is never overwritten with zeros.
     """
     url = f"{BASE_URL}/citations?view_op=view_citation&hl=en&user={user_id}&citation_for_view={citation_id}"
     response = fetch_with_retry(url)
@@ -214,7 +256,9 @@ def fetch_paper_citations(user_id: str, citation_id: str) -> Paper:
 
     # Get paper title
     title_elem = soup.select_one("#gsc_oci_title")
-    title = title_elem.get_text(strip=True) if title_elem else "Unknown"
+    if title_elem is None:
+        raise UnexpectedPageError(f"no paper title on the page for {citation_id}")
+    title = title_elem.get_text(strip=True)
 
     # Get total citations
     total_citations = 0

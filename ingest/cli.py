@@ -1,48 +1,80 @@
 """Command line interface for the ingest tool."""
 
 import argparse
+import os
 import sys
 import time
-from datetime import datetime, timedelta, timezone
 
+import requests
+
+from . import scholar
 from .config import load_config
 from .output import (
     ListCheckError,
+    is_pending,
     load_progress,
     mark_all_stale,
     merge_paper_list,
+    oldest_pending_days,
     papers_to_fetch,
+    papers_to_refresh,
     record_uncited,
     save_progress,
     update_paper_progress,
 )
 from .scholar import (
+    BudgetExhausted,
     RateLimitError,
+    UnexpectedPageError,
     fetch_paper_citations,
     fetch_paper_list,
     load_browser_cookies,
 )
 
-# Suggest a full refresh when a detail page hasn't been fetched for this long
-REFRESH_AFTER_DAYS = 180
+# Reasons to stop fetching and keep what's been saved
+STOP_ERRORS = (RateLimitError, BudgetExhausted, UnexpectedPageError, requests.RequestException)
 
 
-def print_refresh_nudge(data: dict) -> None:
-    """Suggest --refresh if some detail pages are old.
+def report(data: dict, stats: dict) -> None:
+    """Print a run summary, and write it for GitHub Actions when running there."""
+    pending = sum(1 for p in data["papers"] if is_pending(p))
+    oldest = oldest_pending_days(data)
+    used = scholar.settings.used
+    budget = scholar.settings.max_requests
 
-    Scholar sometimes moves citations between years without changing a
-    paper's total, which change detection can't see.
-    """
-    cutoff = datetime.now(timezone.utc) - timedelta(days=REFRESH_AFTER_DAYS)
-    fetched = [
-        datetime.fromisoformat(p["fetched_at"])
-        for p in data["papers"]
-        if p.get("fetched_at")
+    rows = [
+        ("Requests", f"{used}" + (f" of {budget}" if budget else "")),
+        ("Fetched (new or changed)", stats["fetched"]),
+        ("Refreshed (aged)", stats["refreshed"]),
+        ("Unchanged", stats["unchanged"]),
+        ("Uncited (no request)", stats["uncited"]),
+        ("Skipped (inconsistent page)", stats["skipped"]),
+        ("Still pending", pending),
+        ("Oldest pending (days)", f"{oldest:.1f}"),
     ]
-    old = [t for t in fetched if t < cutoff]
-    if old:
-        print(f"{len(old)} papers were last fetched more than {REFRESH_AFTER_DAYS} days ago "
-              f"(oldest {min(old).date()}); consider running with --refresh")
+    print("\nSummary:")
+    for name, value in rows:
+        print(f"  {name}: {value}")
+    if stats["stopped"]:
+        print(f"  Stopped early: {stats['stopped']}")
+    if pending:
+        print(f"{pending} papers still need fetching; the next run continues with them.")
+
+    if os.environ.get("GITHUB_ACTIONS") and pending:
+        print(f"::warning::{pending} papers still pending (oldest {oldest:.0f} days)")
+    if os.environ.get("GITHUB_STEP_SUMMARY"):
+        with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+            f.write("### Scholar scrape\n\n| | |\n|---|---|\n")
+            f.writelines(f"| {name} | {value} |\n" for name, value in rows)
+            if stats["stopped"]:
+                f.write(f"\nStopped early: {stats['stopped']}\n")
+    if os.environ.get("GITHUB_OUTPUT"):
+        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.write(f"fetched={stats['fetched']}\n")
+            f.write(f"refreshed={stats['refreshed']}\n")
+            f.write(f"pending={pending}\n")
+            f.write(f"oldest_pending_days={oldest:.1f}\n")
+            f.write(f"requests={used}\n")
 
 
 def main() -> None:
@@ -63,26 +95,50 @@ def main() -> None:
     parser.add_argument(
         "--output",
         "-o",
-        default="results/citations.json",
-        help="Output JSON file path (default: results/citations.json)",
+        default="data/citations.json",
+        help="Output JSON file path (default: data/citations.json)",
     )
     parser.add_argument(
         "--refresh",
         action="store_true",
         help="Re-fetch every paper, not just those whose citation count changed",
     )
+    parser.add_argument(
+        "--max-requests",
+        type=int,
+        help="Most requests to make this run (overrides config max_requests)",
+    )
+    parser.add_argument(
+        "--max-retries",
+        type=int,
+        help="Attempts per page when rate limited (overrides config max_retries)",
+    )
+    parser.add_argument(
+        "--delay",
+        type=float,
+        help="Seconds between requests (overrides config request_delay)",
+    )
+    parser.add_argument(
+        "--no-cookies",
+        action="store_true",
+        help="Don't load browser cookies (for unattended runs)",
+    )
 
     args = parser.parse_args()
 
-    # Load configuration
+    # Load configuration; command line options override it
     config = load_config(args.config)
-
-    # Command line user ID overrides config
     user_id = args.user or config["user_id"]
-    delay = config.get("request_delay", 2)
+    delay = args.delay if args.delay is not None else config["request_delay"]
+    scholar.settings.max_requests = (
+        args.max_requests if args.max_requests is not None else config["max_requests"]
+    )
+    scholar.settings.max_retries = (
+        args.max_retries if args.max_retries is not None else config["max_retries"]
+    )
 
-    # Try to load browser cookies for authentication
-    load_browser_cookies()
+    if not args.no_cookies:
+        load_browser_cookies()
 
     data = load_progress(args.output)
     if data is not None and data.get("user_id") not in (None, user_id):
@@ -93,8 +149,8 @@ def main() -> None:
     print(f"Fetching paper list for user {user_id}...")
     try:
         paper_list, profile = fetch_paper_list(user_id, delay)
-    except RateLimitError as e:
-        print(f"\nRate limited: {e}")
+    except STOP_ERRORS as e:
+        print(f"\nCould not fetch the paper list: {e}")
         sys.exit(1)
     print(f"Found {len(paper_list)} papers")
     if profile:
@@ -121,32 +177,48 @@ def main() -> None:
         save_progress(data, args.output)
     queue = [i for i in queue if i not in uncited]
 
+    refresh = papers_to_refresh(
+        data, list_counts, config["refresh_after_days"], config["refresh_per_run"]
+    )
     total = len(data["papers"])
+    stats = {
+        "fetched": 0,
+        "refreshed": 0,
+        "unchanged": total - len(queue) - len(uncited),
+        "uncited": len(uncited),
+        "skipped": 0,
+        "stopped": None,
+    }
     print(f"{len(queue)} of {total} papers need fetching "
-          f"({total - len(queue) - len(uncited)} unchanged, {len(uncited)} uncited)")
+          f"({stats['unchanged']} unchanged, {len(uncited)} uncited); "
+          f"{len(refresh)} due for refresh")
 
-    # Stage 2: Fetch citations for changed papers
-    for n, i in enumerate(queue, 1):
+    # Stage 2: Fetch changed papers, then refresh the oldest detail pages
+    work = [(i, False) for i in queue] + [(i, True) for i in refresh]
+    for n, (i, is_refresh) in enumerate(work, 1):
         paper_entry = data["papers"][i]
-        print(f"Fetching citations for paper {n}/{len(queue)}: {paper_entry['title'][:60]}...")
+        time.sleep(delay)
+        print(f"Fetching citations for paper {n}/{len(work)}"
+              f"{' (refresh)' if is_refresh else ''}: {paper_entry['title'][:60]}...")
         try:
             paper = fetch_paper_citations(user_id, paper_entry["citation_id"])
-        except RateLimitError as e:
-            print(f"\nRate limited: {e}")
-            print(f"Progress saved: {n - 1}/{len(queue)} papers fetched. "
-                  f"Re-run `python -m ingest` to fetch the remaining {len(queue) - n + 1}.")
-            sys.exit(1)
+        except STOP_ERRORS as e:
+            stats["stopped"] = f"{type(e).__name__}: {e}"
+            print(f"\nStopping: {stats['stopped']}")
+            break
 
-        update_paper_progress(
-            data, i, paper, args.output, list_counts.get(paper_entry["citation_id"])
-        )
+        listed = list_counts.get(paper_entry["citation_id"])
+        if listed and not paper.total_citations:
+            # Don't overwrite a cited paper with an empty page; retry next run
+            print(f"  Skipped: list shows {listed} citations but the page shows none")
+            stats["skipped"] += 1
+            continue
+
+        update_paper_progress(data, i, paper, args.output, listed)
+        stats["refreshed" if is_refresh else "fetched"] += 1
         print("  Saved")
 
-        if n < len(queue):
-            time.sleep(delay)
-
-    print(f"\nDone! All {total} papers up to date. Results saved to {args.output}")
-    print_refresh_nudge(data)
+    report(data, stats)
 
 
 if __name__ == "__main__":
