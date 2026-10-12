@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from model.data import build_series, h_index, to_arrays
-from model.forecast import aggregate_summary, paper_summaries, simulate
+from model.forecast import aggregate_summary, forecast_horizon, paper_summaries, simulate
 from model.kalman import ModelParams, poisson_laplace
 
 SCRAPED_AT = datetime(2024, 7, 2, tzinfo=timezone.utc)
@@ -81,3 +81,12 @@ def test_momentum_carries_recent_trend():
     assert np.all(deviation[0] > 0) and np.all(deviation[1] < 0)
     # Momentum fades by rho each year
     np.testing.assert_allclose(deviation[:, 1:] / deviation[:, :-1], 0.5)
+
+
+@pytest.mark.parametrize(
+    "exposure, lead, horizon",
+    [(0.1, 1.5, 0), (0.49, 1.5, 0), (0.5, 1.5, 1), (0.78, 1.5, 1), (1.0, 1.5, 1), (0.3, 3.0, 2)],
+)
+def test_forecast_horizon(exposure, lead, horizon):
+    # Before July a 1.5-year lead reaches the end of this year; from July on, next year
+    assert forecast_horizon(exposure, lead) == horizon

@@ -9,6 +9,7 @@ proper intervals.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import numpy as np
@@ -17,6 +18,22 @@ from .data import Series, h_index, i10_index
 from .kalman import LaplaceResult, ModelParams, propagate
 
 QUANTILES = (0.1, 0.5, 0.9)
+DEFAULT_LEAD = 1.5
+
+
+def forecast_horizon(exposure: float, lead: float = DEFAULT_LEAD) -> int:
+    """Number of years to forecast after the current year.
+
+    Forecasts run through the last year-end within `lead` years of the
+    scrape date. With a lead of 1.5, a scrape before July forecasts through
+    the end of the current year, and from July on through the end of next
+    year.
+
+    Args:
+        exposure: Fraction of the current year elapsed at the scrape.
+        lead: Maximum time from the scrape to the end of the forecast, in years.
+    """
+    return max(0, math.floor(exposure + lead) - 1)
 
 
 @dataclass

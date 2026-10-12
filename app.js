@@ -400,11 +400,14 @@ function drawProjectedRegion(g, xScale, innerHeight) {
         .attr('width', x1 - start)
         .attr('height', innerHeight);
 
-    g.append('text')
-        .attr('class', 'projected-label')
-        .attr('x', start + 4)
-        .attr('y', 12)
-        .text('projected');
+    // Skip the label when the region is too narrow to hold it (current-year-only forecasts)
+    if (x1 - start >= 60) {
+        g.append('text')
+            .attr('class', 'projected-label')
+            .attr('x', start + 4)
+            .attr('y', 12)
+            .text('projected');
+    }
 }
 
 // Draw a line solid left of the projected region and dashed within it
@@ -715,8 +718,13 @@ function drawLinePlot(paper) {
     }
 
     const yValue = d => (useAccumulated ? d.cumulative : d.rate);
+    // A paper whose only year is the last forecast year gets a one-year axis centered on it
+    const lastYear = d3.max(forecastYears);
+    const xDomain = paper.years[0] < lastYear
+        ? [paper.years[0], lastYear]
+        : [lastYear - 0.5, lastYear + 0.5];
     const xScale = d3.scaleLinear()
-        .domain([paper.years[0], d3.max(forecastYears)])
+        .domain(xDomain)
         .range([0, innerWidth]);
 
     const yMax = d3.max([...observed.map(yValue), ...band.map(d => d.upper), ...fan.map(d => d.upper)]);

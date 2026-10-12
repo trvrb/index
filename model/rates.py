@@ -23,7 +23,7 @@ from .data import (
     parse_scraped_at,
     to_arrays,
 )
-from .forecast import aggregate_summary, paper_summaries, simulate
+from .forecast import DEFAULT_LEAD, aggregate_summary, forecast_horizon, paper_summaries, simulate
 from .kalman import ModelParams, poisson_laplace
 from .tune import DEFAULT_DRIFT_AGES, DEFAULT_PERSISTENCE, fit_hyperparameters
 
@@ -121,10 +121,11 @@ def main() -> None:
         help=f"Fraction of a paper's momentum kept each year when fitting (default: {DEFAULT_PERSISTENCE})",
     )
     parser.add_argument(
-        "--forecast-years",
-        type=int,
-        default=3,
-        help="Number of years to forecast after the current year (default: 3)",
+        "--forecast-lead",
+        type=float,
+        default=DEFAULT_LEAD,
+        help="Forecast through the last year-end within this many years of the "
+             f"scrape date (default: {DEFAULT_LEAD})",
     )
     parser.add_argument(
         "--samples",
@@ -195,13 +196,14 @@ def main() -> None:
     loglik = float(laplace.loglik.sum())
     print(f"  log-likelihood: {loglik:.2f} ({laplace.n_iter} Newton iterations)")
 
-    print(f"Forecasting {args.forecast_years} years with {args.samples} draws...")
+    horizon = forecast_horizon(exposure, args.forecast_lead)
+    print(f"Forecasting through {current_year + horizon} with {args.samples} draws...")
     forecast = simulate(
         series,
         laplace,
         params,
         current_year,
-        horizon=args.forecast_years,
+        horizon=horizon,
         n_samples=args.samples,
         seed=args.seed,
         extra_totals=unmodeled_totals,

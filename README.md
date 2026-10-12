@@ -55,7 +55,7 @@ python -m model.rates
 
 This reads `results/citations.json`, fits the model hyperparameters by maximum marginal likelihood (a few seconds), and writes `data/citation_rates.json`, which the visualization reads. Options:
 
-- `--forecast-years N`: years to forecast after the current year (default 3)
+- `--forecast-lead YEARS`: forecast through the last year-end within this many years of the scrape date (default 1.5). Before July that's the end of the current year; from July on, the end of next year.
 - `--params FILE`: use fixed hyperparameters from `model.tune` instead of fitting
 - `--drift-ages K`: number of age-specific drift parameters (default 3)
 - `--persistence RHO`: fraction of a paper's momentum kept each year (default 0.5; 0 turns momentum off)
@@ -158,7 +158,7 @@ Model output (abbreviated):
              "drift": [1.02, 0.08, -0.10], "interval": 0.8 },
   "summary": { "years": [...], "h_index": [...], "citations": [...],
                "h_index_to_date": 66, "i10_index_to_date": 135, "citations_to_date": 24936 },
-  "forecast": { "years": [2026, 2027, 2028, 2029],
+  "forecast": { "years": [2026, 2027],
                 "h_index_q10": [...], "h_index_q50": [...], "h_index_q90": [...],
                 "citations_q50": [...], "cumulative_q50": [...] },
   "papers": [
@@ -202,6 +202,6 @@ y_a ~ Poisson(e_a · exp(x_a))
 - **Hyperparameters:** `q`, `r`, `m0`, `v0` and `δ` are shared across papers and fit by maximizing the approximate marginal likelihood.
 - **Momentum:** ρ is fixed at 0.5, so a paper's deviation from the typical trajectory halves each year. The data support momentum but can't pin down how persistent it is.
 - **Drift:** with K=3, a typical paper's rate rises about 2.8× into its second year, holds steady, then declines about 10% per year.
-- **Forecasts:** these simulate all papers jointly, which gives intervals for total citations and h-index.
+- **Forecasts:** these simulate all papers jointly, which gives intervals for total citations and h-index. They run through the last year-end within 1.5 years of the scrape.
 
 See `notes/model.md` for details, the model comparison, and backtest results.

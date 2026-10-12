@@ -133,8 +133,10 @@ estimate went to 0, so the random walk already absorbs the extra-Poisson variati
 from their joint Laplace posterior, jointly across papers, then:
 
 1. **Finishes the current year:** observed count + `Poisson((1 − e) · λ)`.
-2. **Projects H years ahead.** Each step adds the drift for the paper's age in the target year,
-   the paper's decaying momentum `ρ · d`, and noise.
+2. **Projects ahead** through the last year-end within 1.5 years of the scrape (`--forecast-lead`).
+   Before July that's the end of the current year; from July on, the end of next year. Each
+   step adds the drift for the paper's age in the target year, the paper's decaying momentum
+   `ρ · d`, and noise.
 3. **Summarizes:**
    - Per-paper quantiles of the rate are analytic (lognormal).
    - Quantiles of cumulative counts, total citations and h-index come from the draws.
