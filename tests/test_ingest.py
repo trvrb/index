@@ -176,13 +176,15 @@ def test_second_run_only_fetches_changed_papers(fake, monkeypatch, tmp_path):
     path = tmp_path / "c.json"
     first = run_cli(monkeypatch, path)
 
+    # Scholar hasn't refreshed: nothing fetched and the file is unchanged
+    before = path.read_text()
     fake.requests.clear()
     second = run_cli(monkeypatch, path)
     assert fake.detail_requests() == []
-    # Unchanged histograms are current through the new list fetch
-    assert second["papers"][0]["scraped_at"] > first["papers"][0]["scraped_at"]
-    assert second["papers"][0]["fetched_at"] == first["papers"][0]["fetched_at"]
+    assert path.read_text() == before
 
+    # Scholar refreshed: only the changed paper is fetched, and unchanged
+    # papers are marked current as of this run
     fake.papers["U:b"]["by_year"]["2026"] = 2
     fake.requests.clear()
     third = run_cli(monkeypatch, path)
@@ -190,6 +192,40 @@ def test_second_run_only_fetches_changed_papers(fake, monkeypatch, tmp_path):
     assert "U:b" in fake.detail_requests()[0]
     assert third["papers"][1]["citations_by_year"] == {"2021": 3, "2026": 2}
     assert third["papers"][1]["listed_citations"] == 5
+    assert third["papers"][0]["scraped_at"] > second["papers"][0]["scraped_at"]
+    assert third["papers"][0]["fetched_at"] == first["papers"][0]["fetched_at"]
+
+
+def test_unrefreshed_scholar_reports_unchanged(fake, monkeypatch, tmp_path):
+    path = tmp_path / "c.json"
+    run_cli(monkeypatch, path)
+    outputs = tmp_path / "github_output"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(outputs))
+
+    run_cli(monkeypatch, path)
+    written = dict(line.split("=", 1) for line in outputs.read_text().splitlines())
+    assert written["status"] == "unchanged"
+    assert written["requests"] == "1"  # just the paper list
+
+
+def test_pending_papers_fetched_without_refresh_keep_refresh_time(fake, monkeypatch, tmp_path):
+    path = tmp_path / "c.json"
+    _first_run_then_change(fake, monkeypatch, path)
+    refresh_seen = run_cli(monkeypatch, path, "--max-requests", "2")  # leaves U:b pending
+    assert refresh_seen["papers"][1]["stale"]
+
+    # Next run: Scholar hasn't refreshed again, but the pending paper is fetched
+    outputs = tmp_path / "github_output"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(outputs))
+    fake.requests.clear()
+    data = run_cli(monkeypatch, path)
+    assert len(fake.detail_requests()) == 1
+    b = data["papers"][1]
+    assert "stale" not in b
+    assert b["scraped_at"] == data["scraped_at"] == refresh_seen["scraped_at"]
+    assert b["fetched_at"] > b["scraped_at"]
+    written = dict(line.split("=", 1) for line in outputs.read_text().splitlines())
+    assert written["status"] == "updated"
 
 
 def _first_run_then_change(fake, monkeypatch, path):
@@ -346,7 +382,8 @@ def _listed(citations, cid="U:a"):
 
 def test_merge_falls_back_to_total_citations(tmp_path):
     path = str(tmp_path / "c.json")
-    unchanged = merge_paper_list(_stored(), _listed(28), None, "U", path)["papers"][0]
+    # Scholar refreshed (another paper changed): unchanged papers are current as of now
+    unchanged = merge_paper_list(_stored(), _listed(28), None, "U", path, updated=True)["papers"][0]
     assert "stale" not in unchanged
     assert unchanged["fetched_at"] == "2026-01-01T00:00:00+00:00"
     assert unchanged["scraped_at"] > "2026-01-01T00:00:00+00:00"

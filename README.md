@@ -28,8 +28,9 @@ gh workflow run update.yml -f dry_run=false   # update the site now
 ```
 
 - **Request budget:** each run makes at most 80 requests and stops at the first sign of rate limiting, keeping what it fetched. Papers left pending go first next run. A day with no changes costs 2 requests.
+- **Days without a Scholar refresh:** Scholar refreshes citation counts every few days. If no paper's listed count changed, the run ends without a commit, and timestamps stay at the last refresh so the current-year rate isn't diluted.
 - **Refused days:** Scholar refuses some of GitHub's runner IP addresses. When it refuses the paper list, the run is skipped quietly (exit 75, shown as a warning) and the next day catches up.
-- **Notifications:** a run fails, and GitHub emails you, if the data hasn't updated in two weeks, a paper has been pending for two weeks, or the paper list fails its safety checks.
+- **Notifications:** a run fails, and GitHub emails you, if the data hasn't changed in two weeks, a paper has been pending for two weeks, or the paper list fails its safety checks.
 - **Who writes `data/`:** the bot is the normal writer. If you run the scraper locally, `git pull` first and push promptly. For experiments, write elsewhere with `-o results/citations.json`.
 
 ### 1. Scrape citation data from Google Scholar

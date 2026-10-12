@@ -22,6 +22,7 @@ from .output import (
     papers_to_refresh,
     record_uncited,
     save_progress,
+    scholar_updated,
     update_paper_progress,
 )
 from .scholar import (
@@ -56,8 +57,12 @@ def write_outputs(values: dict) -> None:
             f.writelines(f"{key}={value}\n" for key, value in values.items())
 
 
-def report(data: dict, stats: dict) -> None:
-    """Print a run summary, and write it for GitHub Actions when running there."""
+def report(data: dict, stats: dict, status: str) -> None:
+    """Print a run summary, and write it for GitHub Actions when running there.
+
+    status is "updated" when the data changed, or "unchanged" when Scholar
+    hasn't refreshed and there was nothing to fetch.
+    """
     pending = sum(1 for p in data["papers"] if is_pending(p))
     oldest = oldest_pending_days(data)
     used = scholar.settings.used
@@ -90,8 +95,8 @@ def report(data: dict, stats: dict) -> None:
             if stats["stopped"]:
                 f.write(f"\nStopped early: {stats['stopped']}\n")
     write_outputs({
-        "status": "updated",
-        "data_age_days": 0,
+        "status": status,
+        "data_age_days": f"{data_age_days(data):.1f}",
         "fetched": stats["fetched"],
         "refreshed": stats["refreshed"],
         "pending": pending,
@@ -192,11 +197,18 @@ def main() -> None:
     if data is not None and args.refresh:
         print("Marking all papers for re-fetching")
         mark_all_stale(data)
+    updated = scholar_updated(data, paper_list, profile)
     try:
-        data = merge_paper_list(data, paper_list, profile, user_id, args.output)
+        data = merge_paper_list(data, paper_list, profile, user_id, args.output, updated)
     except ListCheckError as e:
         print(f"\nNot updating {args.output}: {e}")
         sys.exit(1)
+
+    # Without a Scholar refresh, counts are as of the last refresh, not now
+    observed_at = None if updated else data["scraped_at"]
+    if not updated:
+        print(f"No counts changed on Scholar since the last update "
+              f"({data['scraped_at'][:16].replace('T', ' ')} UTC)")
 
     list_counts = {entry["citation_id"]: entry.get("citations") for entry in paper_list}
     queue = papers_to_fetch(data, list_counts)
@@ -204,14 +216,15 @@ def main() -> None:
     # Papers the list shows as uncited don't need their detail page
     uncited = {i for i in queue if list_counts.get(data["papers"][i]["citation_id"]) == 0}
     for i in uncited:
-        record_uncited(data, i)
+        record_uncited(data, i, observed_at)
     if uncited:
         save_progress(data, args.output)
     queue = [i for i in queue if i not in uncited]
 
+    # Refresh old pages only when Scholar has refreshed, so quiet days cost nothing
     refresh = papers_to_refresh(
         data, list_counts, config["refresh_after_days"], config["refresh_per_run"]
-    )
+    ) if updated else []
     total = len(data["papers"])
     stats = {
         "fetched": 0,
@@ -246,11 +259,14 @@ def main() -> None:
             stats["skipped"] += 1
             continue
 
-        update_paper_progress(data, i, paper, args.output, listed)
+        update_paper_progress(data, i, paper, args.output, listed, observed_at)
         stats["refreshed" if is_refresh else "fetched"] += 1
         print("  Saved")
 
-    report(data, stats)
+    changed = updated or stats["fetched"] or stats["refreshed"] or stats["uncited"]
+    if not changed:
+        print("Nothing to update.")
+    report(data, stats, "updated" if changed else "unchanged")
 
 
 if __name__ == "__main__":

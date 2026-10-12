@@ -5,8 +5,9 @@ name: Update citation data
 #   gh workflow run update.yml                    # dry run: results uploaded as an artifact
 #   gh workflow run update.yml -f dry_run=false   # commit, push and rebuild the site
 #
-# Scholar refuses some runner IP addresses. A refused day is skipped quietly;
-# the run fails (and emails) only if nothing has updated for two weeks.
+# Scholar refreshes counts every few days and refuses some runner IP
+# addresses. Days with no change on Scholar, or a refusal, end without a
+# commit; the run fails (and emails) only if nothing has updated for two weeks.
 
 on:
   schedule:
@@ -107,7 +108,7 @@ jobs:
       - name: Check data has updated within two weeks
         if: fromJSON(steps.ingest.outputs.data_age_days) > 14
         run: |
-          echo "::error::Citation data hasn't updated in ${{ steps.ingest.outputs.data_age_days }} days; Scholar may be refusing every run"
+          echo "::error::Citation data hasn't changed in ${{ steps.ingest.outputs.data_age_days }} days; Scholar may be refusing every run, or not refreshing"
           exit 1
 
       - name: Check no paper has been pending for two weeks

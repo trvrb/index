@@ -92,12 +92,40 @@ def check_paper_list(data: Optional[dict], paper_list: list[dict], profile: Opti
             )
 
 
+def scholar_updated(data: Optional[dict], paper_list: list[dict], profile: Optional[dict]) -> bool:
+    """Whether Scholar's data changed since the stored scrape.
+
+    Scholar refreshes citation counts every few days, not continuously. If no
+    paper was added or removed and no listed count or profile total changed,
+    Scholar hasn't refreshed: its counts are still as of the last refresh.
+    With several new citations a day across a profile, a refresh that
+    changes nothing is very unlikely.
+    """
+    if not data or not data.get("papers"):
+        return True
+    existing = {p.get("citation_id"): p for p in data["papers"]}
+    if set(existing) != {entry["citation_id"] for entry in paper_list}:
+        return True
+    stored_profile = data.get("profile") or {}
+    if profile and profile.get("citations") != stored_profile.get("citations"):
+        return True
+    for entry in paper_list:
+        paper = existing[entry["citation_id"]]
+        if is_pending(paper):
+            continue  # its change was seen in an earlier run
+        listed = entry.get("citations")
+        if listed is None or listed != last_listed(paper):
+            return True
+    return False
+
+
 def merge_paper_list(
     data: Optional[dict],
     paper_list: list[dict],
     profile: Optional[dict],
     user_id: str,
     path: str,
+    updated: Optional[bool] = None,
 ) -> dict:
     """Merge a freshly fetched paper list into the progress file.
 
@@ -105,8 +133,10 @@ def merge_paper_list(
     are dropped. A paper is pending (needs its detail page fetched) if it's
     new, never scraped, already stale, or its listed count differs from the
     count when it was last fetched. Pending papers keep their existing data.
-    Unchanged papers have no new citations, so their histograms are current
-    through now and their scraped_at moves to now.
+
+    If Scholar has refreshed (see scholar_updated), unchanged papers have no
+    new citations as of now, so their scraped_at moves to now. Otherwise
+    Scholar's counts are still as of its last refresh, and timestamps stay.
 
     Args:
         data: Existing progress dict, or None to start fresh.
@@ -115,6 +145,7 @@ def merge_paper_list(
         profile: Profile summary stats, if parsed.
         user_id: Google Scholar user ID.
         path: Output file path.
+        updated: Whether Scholar has refreshed; computed if not given.
 
     Returns:
         The merged progress dict that was written.
@@ -123,10 +154,14 @@ def merge_paper_list(
         ListCheckError: if the paper list fails check_paper_list.
     """
     check_paper_list(data, paper_list, profile)
+    if updated is None:
+        updated = scholar_updated(data, paper_list, profile)
 
     now = _now()
     data = data or {}
     previous_scraped_at = data.get("scraped_at")
+    # Without a refresh, Scholar's counts are still as of the stored scrape
+    current_as_of = now if updated or not previous_scraped_at else previous_scraped_at
     existing = {p.get("citation_id"): p for p in data.get("papers", [])}
 
     papers = []
@@ -142,14 +177,18 @@ def merge_paper_list(
         }
         if paper["citations_by_year"] is not None:
             scraped_at = old.get("scraped_at") or previous_scraped_at
-            paper["fetched_at"] = old.get("fetched_at") or scraped_at
+            if old.get("fetched_at"):
+                paper["fetched_at"] = old["fetched_at"]
+            elif old.get("listed_citations") is None:
+                # Scraped before fetch times were recorded; its page was fetched then
+                paper["fetched_at"] = scraped_at
             paper["scraped_at"] = scraped_at
 
             listed = entry.get("citations")
             changed = listed is None or listed != last_listed(old)
             if old.get("stale") or changed:
                 paper["stale"] = True
-            else:
+            elif updated:
                 paper["scraped_at"] = now
         else:
             # Lets the health check measure how long a new paper has waited
@@ -163,11 +202,11 @@ def merge_paper_list(
 
     result = {
         "user_id": user_id,
-        "scraped_at": now,
-        "profile": profile or data.get("profile"),
+        "scraped_at": current_as_of,
+        "profile": (profile if updated else None) or data.get("profile"),
         "papers": papers,
     }
-    if profile:
+    if profile and updated:
         result["profile"]["scraped_at"] = now
 
     save_progress(result, path)
@@ -237,13 +276,16 @@ def oldest_pending_days(data: dict) -> float:
     return max(ages, default=0.0)
 
 
-def record_uncited(data: dict, index: int) -> None:
-    """Record a paper the list shows as uncited, without fetching its page."""
+def record_uncited(data: dict, index: int, observed_at: Optional[str] = None) -> None:
+    """Record a paper the list shows as uncited, without fetching its page.
+
+    observed_at is when Scholar's counts were last refreshed, if not now.
+    """
     paper = data["papers"][index]
     paper["total_citations"] = 0
     paper["listed_citations"] = 0
     paper["citations_by_year"] = {}
-    paper["scraped_at"] = _now()
+    paper["scraped_at"] = observed_at or _now()
     paper.pop("stale", None)
     paper.pop("first_seen", None)
 
@@ -254,6 +296,7 @@ def update_paper_progress(
     paper: Paper,
     path: str,
     listed_citations: Optional[int] = None,
+    observed_at: Optional[str] = None,
 ) -> None:
     """Update a single paper's citation data in the progress file.
 
@@ -263,6 +306,8 @@ def update_paper_progress(
         paper: Paper object with scraped citation data.
         path: Output file path to re-write.
         listed_citations: The paper's count on the profile list this run.
+        observed_at: When Scholar's counts were last refreshed, if Scholar
+            hasn't refreshed since; the histogram is current as of then.
     """
     now = _now()
     entry = data["papers"][index]
@@ -272,11 +317,12 @@ def update_paper_progress(
     )
     entry["citations_by_year"] = paper.citations_by_year
     entry["fetched_at"] = now
-    entry["scraped_at"] = now
+    entry["scraped_at"] = observed_at or now
     entry.pop("stale", None)
     entry.pop("first_seen", None)
     if entry.get("pub_year") is None and paper.pub_year is not None:
         entry["pub_year"] = paper.pub_year
-    data["scraped_at"] = now
+    if observed_at is None:
+        data["scraped_at"] = now
 
     save_progress(data, path)
