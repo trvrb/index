@@ -1,0 +1,103 @@
+name: Update citation data
+
+# Scrapes Google Scholar for papers whose citation counts changed, refits the
+# model, and commits data/ to main. Run it by hand with:
+#   gh workflow run update.yml                    # dry run: results uploaded as an artifact
+#   gh workflow run update.yml -f dry_run=false   # commit, push and rebuild the site
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Scrape and model without committing (results uploaded as an artifact)"
+        type: boolean
+        default: true
+  # Weekly schedule, to enable once a manual run has succeeded:
+  # schedule:
+  #   - cron: "17 9 * * 1"  # Mondays 09:17 UTC
+
+permissions:
+  contents: write  # push data commits
+  pages: write  # request a Pages build; pushes made with GITHUB_TOKEN don't trigger one
+
+concurrency:
+  group: update-citations
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            .github/constraints.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -c .github/constraints.txt
+
+      - name: Run tests
+        run: pytest -q
+
+      # Stops at the first sign of rate limiting and keeps what it fetched;
+      # papers still pending are fetched first next run
+      - name: Scrape changed papers
+        id: ingest
+        run: python -m ingest --no-cookies --delay 10 --max-retries 1
+
+      - name: Estimate rates and forecasts
+        run: python -m model.rates
+
+      - name: Summarize changes (dry run)
+        if: inputs.dry_run
+        run: git diff --stat -- data/ | tee data-diff.txt
+
+      - name: Upload results (dry run)
+        if: inputs.dry_run
+        uses: actions/upload-artifact@v7
+        with:
+          name: citation-data
+          path: |
+            data/citations.json
+            data/citation_rates.json
+            data-diff.txt
+
+      # No pull or rebase before pushing: if main moved, the push fails and the
+      # run can be repeated, rather than line-merging two versions of the data
+      - name: Commit and push
+        id: commit
+        if: ${{ !inputs.dry_run && github.ref == 'refs/heads/main' }}
+        run: |
+          git add data/citations.json data/citation_rates.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          stats=$(jq -r '.summary | "h-index \(.h_index_to_date), i10-index \(.i10_index_to_date), \(.citations_to_date) citations"' data/citation_rates.json)
+          git commit -m "Update citation data ($(date -u +%Y-%m-%d))" \
+            -m "$stats" \
+            -m "Fetched ${{ steps.ingest.outputs.fetched }} changed papers and refreshed ${{ steps.ingest.outputs.refreshed }} using ${{ steps.ingest.outputs.requests }} requests; ${{ steps.ingest.outputs.pending }} still pending."
+          git push origin HEAD:main
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Rebuild site
+        if: steps.commit.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X POST "repos/${{ github.repository }}/pages/builds"
+
+      # Runs last, so progress is already committed; failing here sends an
+      # email when Scholar keeps blocking detail pages week after week
+      - name: Check for papers stuck pending
+        if: fromJSON(steps.ingest.outputs.oldest_pending_days) > 18
+        run: |
+          echo "::error::A paper has waited ${{ steps.ingest.outputs.oldest_pending_days }} days for an update; Scholar may be blocking detail pages"
+          exit 1
