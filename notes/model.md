@@ -146,7 +146,7 @@ from their joint Laplace posterior, jointly across papers, then:
 
 ## Data updates
 
-`data/citations.json` is updated weekly by a GitHub Actions workflow. Detail pages are fetched
+`data/citations.json` is updated daily by a GitHub Actions workflow. Detail pages are fetched
 only for papers whose listed citation count changed. Each run also re-fetches up to 10 papers
 whose pages are more than 90 days old, because Scholar sometimes moves citations between years
 without changing a paper's total. Of 421 paper-snapshots with unchanged totals, 58 had their

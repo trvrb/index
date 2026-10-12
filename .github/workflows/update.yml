@@ -1,20 +1,22 @@
 name: Update citation data
 
-# Scrapes Google Scholar for papers whose citation counts changed, refits the
-# model, and commits data/ to main. Run it by hand with:
+# Daily: scrapes Google Scholar for papers whose citation counts changed,
+# refits the model, and commits data/ to main. Run it by hand with:
 #   gh workflow run update.yml                    # dry run: results uploaded as an artifact
 #   gh workflow run update.yml -f dry_run=false   # commit, push and rebuild the site
+#
+# Scholar refuses some runner IP addresses. A refused day is skipped quietly;
+# the run fails (and emails) only if nothing has updated for two weeks.
 
 on:
+  schedule:
+    - cron: "17 9 * * *"  # daily, 09:17 UTC
   workflow_dispatch:
     inputs:
       dry_run:
         description: "Scrape and model without committing (results uploaded as an artifact)"
         type: boolean
         default: true
-  # Weekly schedule, to enable once a manual run has succeeded:
-  # schedule:
-  #   - cron: "17 9 * * 1"  # Mondays 09:17 UTC
 
 permissions:
   contents: write  # push data commits
@@ -26,7 +28,7 @@ concurrency:
 
 jobs:
   update:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
@@ -46,20 +48,26 @@ jobs:
         run: pytest -q
 
       # Stops at the first sign of rate limiting and keeps what it fetched;
-      # papers still pending are fetched first next run
+      # papers still pending are fetched first next run. Exit 75 means Scholar
+      # refused the paper list and nothing was updated: skip the rest quietly.
       - name: Scrape changed papers
         id: ingest
-        run: python -m ingest --no-cookies --delay 10 --max-retries 1
+        run: |
+          status=0
+          python -m ingest --no-cookies --delay 10 --max-retries 1 || status=$?
+          if [ "$status" -eq 75 ]; then exit 0; fi
+          exit "$status"
 
       - name: Estimate rates and forecasts
+        if: steps.ingest.outputs.status == 'updated'
         run: python -m model.rates
 
       - name: Summarize changes (dry run)
-        if: inputs.dry_run
+        if: inputs.dry_run && steps.ingest.outputs.status == 'updated'
         run: git diff --stat -- data/ | tee data-diff.txt
 
       - name: Upload results (dry run)
-        if: inputs.dry_run
+        if: inputs.dry_run && steps.ingest.outputs.status == 'updated'
         uses: actions/upload-artifact@v7
         with:
           name: citation-data
@@ -72,7 +80,7 @@ jobs:
       # run can be repeated, rather than line-merging two versions of the data
       - name: Commit and push
         id: commit
-        if: ${{ !inputs.dry_run && github.ref == 'refs/heads/main' }}
+        if: ${{ !inputs.dry_run && github.ref == 'refs/heads/main' && steps.ingest.outputs.status == 'updated' }}
         run: |
           git add data/citations.json data/citation_rates.json
           if git diff --cached --quiet; then
@@ -94,10 +102,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh api -X POST "repos/${{ github.repository }}/pages/builds"
 
-      # Runs last, so progress is already committed; failing here sends an
-      # email when Scholar keeps blocking detail pages week after week
-      - name: Check for papers stuck pending
-        if: fromJSON(steps.ingest.outputs.oldest_pending_days) > 18
+      # These run last, so any progress is already committed. Failing here sends
+      # an email; occasional refused days don't trigger them.
+      - name: Check data has updated within two weeks
+        if: fromJSON(steps.ingest.outputs.data_age_days) > 14
+        run: |
+          echo "::error::Citation data hasn't updated in ${{ steps.ingest.outputs.data_age_days }} days; Scholar may be refusing every run"
+          exit 1
+
+      - name: Check no paper has been pending for two weeks
+        if: fromJSON(steps.ingest.outputs.oldest_pending_days) > 14
         run: |
           echo "::error::A paper has waited ${{ steps.ingest.outputs.oldest_pending_days }} days for an update; Scholar may be blocking detail pages"
           exit 1

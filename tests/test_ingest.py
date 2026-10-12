@@ -209,7 +209,8 @@ def test_budget_stops_and_keeps_pending(fake, monkeypatch, tmp_path):
     assert len(fake.requests) == 2
     stale = [p["citation_id"] for p in data["papers"] if p.get("stale")]
     assert stale == ["U:b"]  # the larger change (U:a) was fetched first
-    assert "pending=1\n" in outputs.read_text()
+    written = dict(line.split("=", 1) for line in outputs.read_text().splitlines())
+    assert written["status"] == "updated" and written["pending"] == "1"
 
     fake.requests.clear()
     data = run_cli(monkeypatch, path)
@@ -272,13 +273,33 @@ def test_connection_error_keeps_progress(fake, monkeypatch, tmp_path):
     assert data["papers"][2]["scraped_at"] > "2026"  # merge still recorded
 
 
-def test_list_failure_exits_without_writing(fake, monkeypatch, tmp_path):
+@pytest.mark.parametrize("status", [403, 429])
+def test_refused_list_skips_without_writing(fake, monkeypatch, tmp_path, status):
     path = tmp_path / "c.json"
     run_cli(monkeypatch, path)
     before = path.read_text()
-    monkeypatch.setattr(scholar.session, "get", lambda url, timeout=None: FakeResponse("", 429))
+    outputs = tmp_path / "github_output"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(outputs))
+    monkeypatch.setattr(scholar.session, "get", lambda url, timeout=None: FakeResponse("", status))
+
     with pytest.raises(SystemExit) as exit_info:
         run_cli(monkeypatch, path, "--max-retries", "1")
+    assert exit_info.value.code == cli.EXIT_SKIPPED
+    assert path.read_text() == before
+    written = dict(line.split("=", 1) for line in outputs.read_text().splitlines())
+    assert written["status"] == "skipped"
+    assert float(written["data_age_days"]) < 0.01
+
+
+def test_truncated_list_fails(fake, monkeypatch, tmp_path):
+    path = tmp_path / "c.json"
+    run_cli(monkeypatch, path)
+    before = path.read_text()
+    for cid in ["U:b", "U:c"]:
+        del fake.papers[cid]  # list now shows 1 of 3 stored papers
+
+    with pytest.raises(SystemExit) as exit_info:
+        run_cli(monkeypatch, path)
     assert exit_info.value.code == 1
     assert path.read_text() == before
 

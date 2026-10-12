@@ -18,19 +18,18 @@ pip install -r requirements.txt
 
 ## Usage
 
-### Automated weekly updates
+### Automated daily updates
 
-A GitHub Actions workflow (`.github/workflows/update.yml`) does the whole update: it scrapes Scholar for papers whose counts changed, refits the model, commits `data/citations.json` and `data/citation_rates.json` to `main` as `github-actions[bot]`, and requests a Pages build. Pushes made with the workflow's token don't rebuild Pages on their own.
+A GitHub Actions workflow (`.github/workflows/update.yml`) runs daily at 09:17 UTC. It scrapes Scholar for papers whose counts changed, refits the model, commits `data/citations.json` and `data/citation_rates.json` to `main` as `github-actions[bot]`, and requests a Pages build. Pushes made with the workflow's token don't rebuild Pages on their own.
 
 ```bash
 gh workflow run update.yml                    # dry run: results uploaded as an artifact, nothing committed
 gh workflow run update.yml -f dry_run=false   # update the site now
 ```
 
-Once the weekly schedule is enabled in the workflow, it runs every Monday:
-
-- **Request budget:** each run makes at most 80 requests and stops at the first sign of rate limiting, keeping what it fetched. Papers left pending go first next week.
-- **Notifications:** a run fails, and GitHub emails you, if the paper list can't be fetched or a paper has been pending for more than 18 days.
+- **Request budget:** each run makes at most 80 requests and stops at the first sign of rate limiting, keeping what it fetched. Papers left pending go first next run. A day with no changes costs 2 requests.
+- **Refused days:** Scholar refuses some of GitHub's runner IP addresses. When it refuses the paper list, the run is skipped quietly (exit 75, shown as a warning) and the next day catches up.
+- **Notifications:** a run fails, and GitHub emails you, if the data hasn't updated in two weeks, a paper has been pending for two weeks, or the paper list fails its safety checks.
 - **Who writes `data/`:** the bot is the normal writer. If you run the scraper locally, `git pull` first and push promptly. For experiments, write elsewhere with `-o results/citations.json`.
 
 ### 1. Scrape citation data from Google Scholar
@@ -119,7 +118,7 @@ index/
 │   ├── citations.json       # Scrape state: per-paper citation histograms
 │   └── citation_rates.json  # Model output for GitHub Pages
 ├── .github/workflows/
-│   └── update.yml      # Weekly scrape, model and commit
+│   └── update.yml      # Daily scrape, model and commit
 ├── results/            # Local working outputs (gitignored)
 ├── ingest/             # Google Scholar scraper
 ├── model/

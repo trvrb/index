@@ -4,6 +4,8 @@ import argparse
 import os
 import sys
 import time
+from datetime import datetime, timezone
+from typing import Optional
 
 import requests
 
@@ -33,6 +35,25 @@ from .scholar import (
 
 # Reasons to stop fetching and keep what's been saved
 STOP_ERRORS = (RateLimitError, BudgetExhausted, UnexpectedPageError, requests.RequestException)
+
+# Exit status when Scholar refused the paper list, so nothing was updated.
+# Unattended runs treat this as a skipped run rather than a failure.
+EXIT_SKIPPED = 75
+
+
+def data_age_days(data: Optional[dict]) -> float:
+    """Days since the stored data was last confirmed current by a paper-list fetch."""
+    if not data or not data.get("scraped_at"):
+        return float("inf")
+    scraped_at = datetime.fromisoformat(data["scraped_at"])
+    return (datetime.now(timezone.utc) - scraped_at).total_seconds() / 86400
+
+
+def write_outputs(values: dict) -> None:
+    """Write step outputs when running in GitHub Actions."""
+    if os.environ.get("GITHUB_OUTPUT"):
+        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.writelines(f"{key}={value}\n" for key, value in values.items())
 
 
 def report(data: dict, stats: dict) -> None:
@@ -68,13 +89,15 @@ def report(data: dict, stats: dict) -> None:
             f.writelines(f"| {name} | {value} |\n" for name, value in rows)
             if stats["stopped"]:
                 f.write(f"\nStopped early: {stats['stopped']}\n")
-    if os.environ.get("GITHUB_OUTPUT"):
-        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-            f.write(f"fetched={stats['fetched']}\n")
-            f.write(f"refreshed={stats['refreshed']}\n")
-            f.write(f"pending={pending}\n")
-            f.write(f"oldest_pending_days={oldest:.1f}\n")
-            f.write(f"requests={used}\n")
+    write_outputs({
+        "status": "updated",
+        "data_age_days": 0,
+        "fetched": stats["fetched"],
+        "refreshed": stats["refreshed"],
+        "pending": pending,
+        "oldest_pending_days": f"{oldest:.1f}",
+        "requests": used,
+    })
 
 
 def main() -> None:
@@ -150,8 +173,17 @@ def main() -> None:
     try:
         paper_list, profile = fetch_paper_list(user_id, delay)
     except STOP_ERRORS as e:
+        age = data_age_days(data)
         print(f"\nCould not fetch the paper list: {e}")
-        sys.exit(1)
+        print(f"Nothing updated; stored data is {age:.1f} days old.")
+        if os.environ.get("GITHUB_ACTIONS"):
+            print(f"::warning::Skipped: Scholar refused the paper list ({e})")
+        write_outputs({
+            "status": "skipped",
+            "data_age_days": f"{min(age, 9999):.1f}",
+            "oldest_pending_days": f"{oldest_pending_days(data) if data else 0:.1f}",
+        })
+        sys.exit(EXIT_SKIPPED)
     print(f"Found {len(paper_list)} papers")
     if profile:
         print(f"Profile: {profile['citations']} citations, h-index {profile['h_index']}, "

@@ -90,7 +90,8 @@ def _get(url: str) -> requests.Response:
 
 def _is_blocked(response: requests.Response) -> bool:
     """Whether Scholar answered with a rate limit or CAPTCHA instead of the page."""
-    if response.status_code == 429 or "/sorry/" in response.url:
+    # 403 is how Scholar refuses some datacenter IPs outright
+    if response.status_code in (403, 429) or "/sorry/" in response.url:
         return True
     # Google sometimes serves its CAPTCHA page with status 200
     text = response.text
